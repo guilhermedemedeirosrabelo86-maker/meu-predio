@@ -141,6 +141,9 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
 }
 .logo svg { width: 21px; height: 21px; }
 
+.seletor-condominio > svg.icone { transition: transform 0.2s var(--mola); }
+.seletor-condominio.aberto > svg.icone { transform: rotate(180deg); }
+
 /* Barra superior: verde no celular, emendando com o topo da página */
 .barra-topo {
   view-transition-name: topo;
@@ -638,10 +641,30 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .esq-medio { height: 84px; }
 @keyframes brilho { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
-.abertura { min-height: 100vh; display: grid; place-items: center; background: var(--marca); }
-.abertura .logo { width: 76px; height: 76px; border-radius: 22px; animation: pulsar 1.4s ease-in-out infinite; }
-.abertura .logo svg { width: 40px; height: 40px; }
-@keyframes pulsar { 50% { transform: scale(0.93); } }
+/* Abertura: a logo no meio da tela ao abrir o app e ao entrar na conta; depois cresce e some, revelando o app */
+.abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--marca);
+  color: #fff;
+}
+.abertura.chegando { animation: aparecer 0.25s ease-out both; }
+.abertura .logo { width: 84px; height: 84px; border-radius: 24px; animation: logo-entrar 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both, pulsar 1.6s ease-in-out 0.8s infinite; }
+.abertura .logo svg { width: 44px; height: 44px; }
+.abertura-texto { font-family: var(--fonte-titulo); font-size: 1.625rem; font-weight: 600; animation: cascata 0.5s var(--mola) 0.18s both; }
+.abertura.saindo { animation: abertura-sair 0.5s ease-in both; pointer-events: none; }
+.abertura.saindo .logo { animation: logo-sair 0.5s ease-in both; }
+.abertura.saindo .abertura-texto { animation: vt-sumir 0.2s ease-in both; }
+@keyframes logo-entrar { from { opacity: 0; transform: scale(0.5); } }
+@keyframes logo-sair { to { opacity: 0; transform: scale(1.6); } }
+@keyframes abertura-sair { 40% { opacity: 1; } to { opacity: 0; } }
+@keyframes pulsar { 50% { transform: scale(0.94); } }
 
 /* --- Entrada (login), passe público e celular ---------------------------- */
 
@@ -1206,13 +1229,30 @@ html[data-direcao="lado"]::view-transition-new(conteudo) { animation: 0.28s var(
   .titulo-topo { left: 120px; right: 120px; }
 
   .conteudo { max-width: 1160px; padding: 4px 40px 56px; }
-  .pagina { gap: 24px; }
-  h1 { font-size: 2.5rem; }
 
-  .topo-pagina { margin: 0; padding: 30px 36px 62px; border-radius: 22px; }
-  .hero.topo-pagina { padding-bottom: 70px; }
-  .hero h1 { font-size: 2.5rem; }
-  .pagina > .topo-pagina + :is(.cartao, .vazio, .segmentado, .chips, form, .atalhos, .status-banner, .metricas, .colunas) { margin-inline: 28px; }
+  /* Cabeçalho das páginas: no computador, título limpo sobre o fundo, sem cartões por cima.
+     A faixa verde fica só no Início, como um cartão de boas-vindas. */
+  .topo-pagina { margin: 0; padding: 22px 0 2px; border-radius: 0; background: none; color: var(--texto); overflow: visible; }
+  .topo-pagina::after { display: none; }
+  .topo-pagina h1 { color: var(--texto); }
+  .topo-pagina .subtitulo { color: var(--texto-2); font-size: 1rem; }
+  .topo-pagina .botao { background: var(--superficie-3); color: var(--texto); }
+  .topo-pagina .botao:hover { background: var(--borda); }
+  .topo-pagina .botao.tonal { background: var(--primaria-suave); color: var(--primaria); }
+  .topo-pagina .botao.tonal:hover { background: color-mix(in srgb, var(--primaria) 16%, transparent); }
+  .topo-pagina .botao.primario { background: var(--primaria); color: var(--sobre-primaria); }
+  .topo-pagina .botao.primario:hover { background: var(--primaria-forte); }
+  .topo-pagina .voltar { margin: 0 0 6px -6px; padding: 6px 12px 6px 4px; background: none; color: var(--texto-2); font-size: 0.875rem; }
+  .topo-pagina .voltar:hover { background: var(--superficie-3); color: var(--texto); }
+  .pagina > .topo-pagina + :is(.cartao, .vazio, .segmentado, .chips, form, .atalhos, .status-banner, .metricas, .colunas) { margin-top: 0; }
+
+  .hero.topo-pagina { margin-top: 12px; padding: 34px 40px 36px; border-radius: 24px; background: var(--marca); color: #fff; overflow: hidden; }
+  .hero.topo-pagina::after { display: block; }
+  .hero.topo-pagina h1 { color: #fff; font-size: 2.5rem; }
+  .hero-chips { margin-top: 20px; }
+
+  .pagina { gap: 28px; }
+  h1 { font-size: 2.5rem; }
 
   .metricas { grid-template-columns: repeat(4, 1fr); gap: 16px; }
   .atalhos { padding: 20px 12px; }
@@ -1220,11 +1260,10 @@ html[data-direcao="lado"]::view-transition-new(conteudo) { animation: 0.28s var(
   .atalho .tile { width: 44px; height: 44px; border-radius: 12px; }
 
   .colunas { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); gap: 24px; align-items: start; }
-  .grade { gap: 20px; }
+  .grade { gap: 20px; align-items: stretch; }
 
-  /* Telas de leitura e formulário: coluna central confortável, topo largo */
-  .pagina.estreita > :not(.topo-pagina) { width: 100%; max-width: 760px; margin-inline: auto; }
-  .pagina.estreita > .topo-pagina + * { margin-inline: auto; }
+  /* Telas de leitura e formulário: uma coluna central confortável, com o título alinhado a ela */
+  .pagina.estreita > * { width: 100%; max-width: 780px; margin-inline: auto; }
 
   .dia { aspect-ratio: auto; height: 46px; font-size: 1rem; }
   .barra-topo > a:last-child { display: none; } /* o perfil já está no rodapé do menu lateral */

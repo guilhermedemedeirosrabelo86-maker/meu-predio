@@ -234,6 +234,32 @@ export function vibrar(padrao = 10) {
   try { navigator.vibrate?.(padrao); } catch { /* sem suporte */ }
 }
 
+const semMovimento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const esperar = (ms) => new Promise((resolver) => setTimeout(resolver, ms));
+
+/** Cobre a tela com a logo no meio (ao entrar na conta). Devolve null para quem pediu menos movimento. */
+export function abrirAbertura(texto) {
+  if (semMovimento()) return null;
+  const el = h('div', { class: 'abertura chegando', role: 'status', 'aria-label': texto },
+    h('span', { class: 'logo' }, icone('predio')),
+    h('p', { class: 'abertura-texto' }, texto));
+  el.dataset.desde = performance.now();
+  document.body.append(el);
+  return el;
+}
+
+/** Faz a logo crescer e sumir, revelando o app, depois de ela ficar ao menos `minimo` ms na tela. */
+export async function fecharAbertura(el, minimo = 1200) {
+  if (!el?.isConnected || el.dataset.fechando) return;
+  el.dataset.fechando = '1';
+  if (semMovimento()) return el.remove();
+  // Sem `desde`, é a abertura do index.html, que aparece junto com a página.
+  await esperar(Math.max(0, minimo - (performance.now() - Number(el.dataset.desde || 0))));
+  el.classList.add('saindo');
+  await esperar(500);
+  el.remove();
+}
+
 export function toast(mensagem, tipo = 'ok') {
   document.querySelector('.toast')?.remove();
   const el = h('div', { class: `toast ${tipo}`, role: tipo === 'erro' ? 'alert' : 'status' },

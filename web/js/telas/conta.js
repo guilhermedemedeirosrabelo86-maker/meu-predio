@@ -1,6 +1,8 @@
 import { post } from '../api.js';
-import { carregarUsuario, recarregar } from '../estado.js';
-import { aoEnviar, campo, campoSenha, erroForm, h, icone, mascaraTelefone } from '../ui.js';
+import { carregarUsuario, estado, recarregar } from '../estado.js';
+import {
+  abrirAbertura, aoEnviar, campo, campoSenha, erroForm, esperar, h, icone, mascaraTelefone,
+} from '../ui.js';
 
 function telaDeAcesso(titulo, subtitulo, formulario, rodape) {
   return h('div', { class: 'tela-acesso' },
@@ -17,6 +19,8 @@ function telaDeAcesso(titulo, subtitulo, formulario, rodape) {
 
 async function entrouNaConta() {
   await carregarUsuario();
+  // A logo cobre a tela e o app é montado por baixo; o roteador a faz sumir quando estiver pronto.
+  if (abrirAbertura(`Olá, ${estado.usuario.nome.split(' ')[0]}!`)) await esperar(300);
   recarregar(); // a rota atual é pública; o roteador leva para o destino certo
 }
 

@@ -17,7 +17,7 @@ import { telaPortaria, telaValidarVisita } from './telas/portaria.js';
 import { telaAreas, telaEditarArea, telaReservas } from './telas/reservas.js';
 import { telaUnidade } from './telas/unidade.js';
 import { telaNovaVisita, telaVisita, telaVisitas } from './telas/visitas.js';
-import { avatar, esqueleto, h, icone, NOMES_PAPEL, vibrar } from './ui.js';
+import { avatar, esqueleto, fecharAbertura, h, icone, NOMES_PAPEL, vibrar } from './ui.js';
 
 // publico: só para quem não está logado | aberta: qualquer um, sem moldura do app
 // condominio: exige um condomínio aberto | papeis: quem pode abrir | aba: item da navegação marcado
@@ -142,6 +142,7 @@ function redirecionamento(achado, caminho) {
 
 let moldura = null; // { chave, el, main, nav }
 let caminhoAnterior = null;
+let origemSeletor = null; // tela de onde o seletor de condomínio foi aberto, para fechá-lo no segundo toque
 const rolagens = new Map(); // posição de rolagem de cada tela, para restaurar ao voltar
 const profundidade = (caminho) => caminho.split('/').filter(Boolean).length;
 const reduzirMovimento = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -173,6 +174,7 @@ async function renderizar({ manterRolagem = false } = {}) {
   if (estado.usuario) selecionarCondominio();
 
   const caminho = location.hash.replace(/^#\/?/, '');
+  if (caminho !== 'condominios') origemSeletor = null;
   const achado = casarRota(caminho);
   const destino = redirecionamento(achado, caminho);
   if (destino !== null) {
@@ -218,6 +220,7 @@ async function renderizar({ manterRolagem = false } = {}) {
     window.scrollTo(0, alvo);
     observarTitulo();
     atualizarBarraTopo();
+    fecharAbertura(document.querySelector('.abertura'));
   };
 
   const mesmaMoldura = comMoldura && moldura?.el.isConnected && moldura.chave === chaveMoldura();
@@ -241,6 +244,7 @@ function montarNaMoldura(conteudo, rota, animarCascata) {
     if (link.dataset.aba === rota.aba) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
+  moldura.el.querySelector('.seletor-condominio')?.classList.toggle('aberto', rota.padrao === 'condominios');
   moldura.main.classList.remove('cascata');
   moldura.main.replaceChildren(conteudo);
   if (animarCascata) {
@@ -282,7 +286,7 @@ function criarMoldura(chave) {
 
   const subtitulo = membro && [NOMES_PAPEL[membro.papel], membro.unidade].filter(Boolean).join(' · ');
   const topo = h('header', { class: 'barra-topo' },
-    h('a', { class: 'seletor-condominio', href: '#/condominios', 'aria-label': 'Trocar de condomínio' },
+    h('a', { class: 'seletor-condominio', href: '#/condominios', 'aria-label': 'Trocar de condomínio', onclick: alternarSeletor },
       h('span', { class: 'logo' }, icone('predio')),
       h('div', { class: 'textos' },
         h('div', { class: 'nome' }, membro ? membro.condominio : 'Meu Prédio'),
@@ -295,6 +299,18 @@ function criarMoldura(chave) {
   const main = h('main', { class: 'conteudo' });
   const el = h('div', { class: nav ? 'app com-nav' : 'app' }, nav, topo, main);
   return { chave, el, main, nav };
+}
+
+/** O seletor de condomínio abre a lista no primeiro toque e, no segundo, volta para onde estava. */
+function alternarSeletor(evento) {
+  if (location.hash !== '#/condominios') {
+    origemSeletor = location.hash;
+    return;
+  }
+  if (!estado.membro) return; // sem condomínio aberto, a lista é a única tela
+  evento.preventDefault();
+  if (origemSeletor) history.back();
+  else location.hash = `/${telaPadrao()}`;
 }
 
 // O título grande da página "sobe" para a barra superior quando sai da tela.
@@ -325,6 +341,7 @@ function cartaoFalha(erro) {
 function mostrarFalha(erro) {
   moldura = null;
   raiz.replaceChildren(h('main', { class: 'conteudo' }, cartaoFalha(erro)));
+  fecharAbertura(document.querySelector('.abertura'));
 }
 
 function atualizarBarraTopo() {
