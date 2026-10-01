@@ -12,6 +12,7 @@ A experiência foi pensada para parecer um app nativo: transições entre telas 
 - **Avisos:** mural com fixar, editar, contador de não lidos e "lido por X de Y".
 - **Reservas:** áreas comuns com regras, antecedência, limite por unidade e aprovação opcional, num calendário mensal.
 - **Ocorrências:** o morador relata com categoria e até 5 fotos (reduzidas no celular antes do envio). O síndico responde numa conversa e marca como "em andamento" ou "resolvida". Só o síndico e a própria unidade veem.
+- **Prestação de contas:** o síndico lança entradas e saídas por categoria, com a foto da nota ou do recibo. Síndico e moradores veem o saldo em caixa, o que entrou e saiu no mês, para onde foi o dinheiro (gráfico por categoria) e os últimos 6 meses. A portaria não vê as finanças.
 - **Visitantes por QR Code:** o morador libera a visita (um dia ou vários) e envia o QR pelo WhatsApp. O visitante abre um link público com o QR. A portaria lê com a câmera do celular (o QR abre a tela de validação), confere se está liberado e registra a entrada. Também dá para digitar o código curto.
 
 ## Como rodar
@@ -33,7 +34,7 @@ Ou dê dois cliques em `iniciar.bat`. O app abre em http://localhost:8000.
 Se o celular não carregar, o Firewall do Windows está bloqueando. Na primeira vez, o Windows pergunta se o Python pode acessar a rede: permita no tipo de rede em uso. Em computador da empresa, isso pode exigir o suporte de TI.
 Pelo IP, o navegador não libera instalação na tela inicial nem notificações, porque elas exigem HTTPS. Isso passa a funcionar quando o app for hospedado.
 
-O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos ficam em `dados/arquivos/`. Ao iniciar, o servidor atualiza sozinho bancos criados por versões anteriores.
+O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos e comprovantes ficam em `dados/arquivos/`. Ao iniciar, o servidor atualiza sozinho bancos criados por versões anteriores.
 
 ## Testes
 
@@ -41,7 +42,7 @@ O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos ficam em `da
 python -m unittest -v
 ```
 
-Os testes sobem o servidor numa porta livre e exercitam a API inteira: permissões, convites, avisos, veículos, reservas, ocorrências com fotos, visitas e portaria.
+Os testes sobem o servidor numa porta livre e exercitam a API inteira: permissões, convites, avisos, veículos, reservas, ocorrências com fotos, visitas, portaria e prestação de contas.
 
 O gerador de QR Code (`web/js/qrcode.js`) foi conferido contra a biblioteca Python `qrcode` (saída idêntica módulo a módulo nas 8 máscaras) e com o leitor zxing.
 
@@ -61,6 +62,7 @@ backend/
   rotas_reservas.py      áreas comuns e reservas
   rotas_ocorrencias.py   ocorrências, fotos e conversa
   rotas_visitas.py       visitas por QR Code e portaria
+  rotas_contas.py        prestação de contas e comprovantes
   rotas_painel.py        resumo da tela inicial
 web/
   index.html, sw.js, manifest.webmanifest
@@ -74,7 +76,7 @@ tests/                   base.py (servidor de teste) e um arquivo por módulo
 
 ## Próximos passos
 
-1. **Prestação de contas** com receitas e despesas.
+1. **Controle de pagamento da taxa** por unidade, ligado à prestação de contas: o síndico marca quem pagou, e cada morador vê a própria situação. Depois, fechamento do mês e balancete em PDF.
 2. **Hospedagem com HTTPS** e **Web Push**, para notificar com o app fechado. Com HTTPS, o celular do morador também passa a instalar o app e a ler o QR Code pela câmera dentro do próprio app (hoje isso só funciona em `localhost`).
 3. **Alertas automáticos:** pedido de reserva, resposta em ocorrência e chegada de visitante.
 4. **Recuperação de senha** por e-mail e limite de tentativas de login.

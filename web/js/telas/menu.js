@@ -14,6 +14,7 @@ export function telaMenu() {
     ['ocorrencias', 'ocorrencias', 'ocorrencias', 'Ocorrências', 'Barulho, vazamento, garagem…'],
     papel !== 'portaria' && ['visitas', 'visitas', 'visitas', 'Visitantes', 'Libere a entrada por QR Code'],
     papel !== 'morador' && ['portaria', 'portaria', 'portaria', 'Portaria', 'Validar visitantes e registrar entradas'],
+    papel !== 'portaria' && ['contas', 'contas', 'contas', 'Prestação de contas', 'Entradas, saídas e saldo em caixa'],
     papel === 'sindico' && ['moradores', 'moradores', 'moradores', 'Moradores', 'Convites, unidades e cadastro'],
     papel === 'sindico' && ['reservas/areas', 'editar', 'reservas', 'Áreas comuns', 'Regras e aprovação das reservas'],
     membro.unidade_id && ['unidade', 'carro', 'unidade', 'Minha unidade', 'Veículos cadastrados'],

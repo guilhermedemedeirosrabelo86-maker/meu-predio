@@ -92,6 +92,7 @@
 .cor-moradores { --c: #7a4e7e; }
 .cor-unidade { --c: #b07f22; }
 .cor-portaria { --c: #3f6b6a; }
+.cor-contas { --c: #6f7a2b; }
 .cor-neutra { --c: #8a8376; }
 
 /* --- Base ---------------------------------------------------------------- */
@@ -699,6 +700,40 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .acesso .cartao > .pilha-curta h2, .acesso .cartao > h2 { font-family: var(--fonte-titulo); font-size: 1.5rem; font-weight: 600; }
 .acesso > .centro { color: rgb(255 255 255 / 75%); }
 .acesso > .centro a { color: var(--areia); font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
+
+/* --- Prestação de contas ------------------------------------------------- */
+
+.contas-painel { gap: 18px; }
+.contas-caixa { text-align: center; padding: 4px 0; }
+.contas-caixa .rotulo { color: var(--texto-2); font-size: 0.8125rem; font-weight: 600; }
+.contas-caixa .valor { margin-top: 4px; font-family: var(--fonte-titulo); font-size: 2.5rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: lining-nums tabular-nums; }
+.contas-caixa .valor.negativo { color: var(--vermelho); }
+.contas-totais { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.contas-totais .rotulo { display: flex; align-items: center; gap: 6px; }
+.contas-totais .valor { margin-top: 4px; font-size: 1.0625rem; font-variant-numeric: tabular-nums; }
+.seta-valor { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 6px; }
+.seta-valor svg { width: 14px; height: 14px; }
+.seta-valor.entrada { background: var(--verde-suave); color: var(--verde); }
+.seta-valor.saida { background: var(--amarelo-suave); color: var(--amarelo); }
+.contas-resultado { text-align: center; color: var(--texto-2); font-size: 0.9375rem; }
+.contas-resultado strong { color: var(--texto); font-weight: 650; }
+.valor-lancamento { font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--texto); }
+.valor-lancamento.receita { color: var(--verde); }
+.valor-destaque { font-family: var(--fonte-titulo); font-size: 2.25rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; }
+.valor-destaque.receita { color: var(--verde); }
+.tem-comprovante { margin-left: 6px; vertical-align: -3px; color: var(--texto-3); }
+.item[aria-current="true"] { background: var(--primaria-suave); }
+.opcoes.duas { grid-template-columns: 1fr 1fr; }
+
+/* Barras horizontais (saídas por categoria): uma cor, ponta arredondada, crescem a partir da esquerda */
+.barras { gap: 16px; }
+.barra-texto { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 7px; font-size: 0.875rem; }
+.barra-nome { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; min-width: 0; }
+.barra-nome svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--texto-3); }
+.barra-valor { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.barra-trilho { height: 10px; border-radius: 4px; background: var(--superficie-3); overflow: hidden; }
+.barra { width: var(--largura); height: 100%; border-radius: 0 4px 4px 0; background: var(--primaria); animation: barra-crescer 0.6s var(--mola) both; }
+@keyframes barra-crescer { from { width: 0; } }
 
 /* --- Início -------------------------------------------------------------- */
 

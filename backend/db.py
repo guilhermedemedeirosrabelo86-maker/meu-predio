@@ -162,6 +162,21 @@ CREATE TABLE IF NOT EXISTS visita_entradas (
     criado_em       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Prestação de contas: cada entrada (receita) ou saída (despesa), em centavos, com comprovante opcional.
+CREATE TABLE IF NOT EXISTS lancamentos (
+    id                  INTEGER PRIMARY KEY,
+    condominio_id       INTEGER NOT NULL REFERENCES condominios(id) ON DELETE CASCADE,
+    tipo                TEXT NOT NULL CHECK (tipo IN ('receita', 'despesa')),
+    categoria           TEXT NOT NULL,
+    descricao           TEXT NOT NULL,
+    valor_centavos      INTEGER NOT NULL CHECK (valor_centavos > 0),
+    data                TEXT NOT NULL,
+    comprovante         TEXT,
+    comprovante_tipo    TEXT,
+    autor_id            INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    criado_em           TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_ocorrencias_condominio ON ocorrencias (condominio_id, status);
 CREATE INDEX IF NOT EXISTS idx_visitas_condominio ON visitas (condominio_id, data_inicio, data_fim);
 CREATE INDEX IF NOT EXISTS idx_visitas_unidade ON visitas (unidade_id);
@@ -169,6 +184,7 @@ CREATE INDEX IF NOT EXISTS idx_reservas_unidade ON reservas (unidade_id, data);
 CREATE INDEX IF NOT EXISTS idx_membros_condominio ON membros (condominio_id);
 CREATE INDEX IF NOT EXISTS idx_avisos_condominio ON avisos (condominio_id, fixado, id);
 CREATE INDEX IF NOT EXISTS idx_sessoes_usuario ON sessoes (usuario_id);
+CREATE INDEX IF NOT EXISTS idx_lancamentos_condominio ON lancamentos (condominio_id, data);
 """
 
 

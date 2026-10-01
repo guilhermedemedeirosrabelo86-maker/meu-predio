@@ -5,6 +5,7 @@ import {
 import { iniciarVerificacao, pararVerificacao } from './notificacoes.js';
 import { telaAvisos, telaEditarAviso } from './telas/avisos.js';
 import { telaConvite, telaCondominios, telaNovoCondominio } from './telas/condominios.js';
+import { telaContas, telaEditarLancamento, telaLancamento } from './telas/contas.js';
 import { telaCelular } from './telas/celular.js';
 import { telaCriarConta, telaEntrar } from './telas/conta.js';
 import { telaInicio } from './telas/inicio.js';
@@ -52,6 +53,11 @@ const ROTAS = [
   { padrao: 'visitas/:id', tela: telaVisita, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'visitas' },
   { padrao: 'portaria', tela: telaPortaria, condominio: true, papeis: EQUIPE, aba: 'portaria' },
   { padrao: 'portaria/v/:token', tela: telaValidarVisita, aba: 'portaria' },
+  // 'contas/novo' precisa vir antes de 'contas/:id'
+  { padrao: 'contas', tela: telaContas, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'contas' },
+  { padrao: 'contas/novo', tela: telaEditarLancamento, condominio: true, papeis: ['sindico'], aba: 'contas' },
+  { padrao: 'contas/:id', tela: telaLancamento, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'contas' },
+  { padrao: 'contas/:id/editar', tela: telaEditarLancamento, condominio: true, papeis: ['sindico'], aba: 'contas' },
   { padrao: 'moradores', tela: telaMoradores, condominio: true, papeis: ['sindico'], aba: 'moradores' },
   { padrao: 'unidade', tela: telaUnidade, condominio: true, aba: 'unidade' },
 ];
@@ -61,13 +67,14 @@ const NAVEGACAO = {
   morador: [
     { id: 'inicio', rotulo: 'Início' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },
     { id: 'visitas', rotulo: 'Visitas' }, { id: 'ocorrencias', rotulo: 'Ocorrências', celular: false },
-    { id: 'unidade', rotulo: 'Minha unidade', celular: false }, { id: 'menu', rotulo: 'Menu', computador: false },
+    { id: 'contas', rotulo: 'Contas', celular: false }, { id: 'unidade', rotulo: 'Minha unidade', celular: false },
+    { id: 'menu', rotulo: 'Menu', computador: false },
   ],
   sindico: [
     { id: 'inicio', rotulo: 'Início' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },
     { id: 'ocorrencias', rotulo: 'Ocorrências' }, { id: 'moradores', rotulo: 'Moradores', celular: false },
     { id: 'visitas', rotulo: 'Visitas', celular: false }, { id: 'portaria', rotulo: 'Portaria', celular: false },
-    { id: 'menu', rotulo: 'Menu', computador: false },
+    { id: 'contas', rotulo: 'Contas', celular: false }, { id: 'menu', rotulo: 'Menu', computador: false },
   ],
   portaria: [
     { id: 'portaria', rotulo: 'Portaria' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },

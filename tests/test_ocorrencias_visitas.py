@@ -85,16 +85,6 @@ class TesteVisitas(BaseApi):
             trava.start()
             self.addCleanup(trava.stop)
 
-    def com_porteiro(self):
-        sindico, morador, cid, _ = self.condominio_com_morador()
-        codigo = sindico.get(f"/api/condominios/{cid}")[1]["codigo_convite"]
-        porteiro = self.novo_usuario("Seu Zé")
-        self.assertEqual(porteiro.post(f"/api/convites/{codigo}/entrar", {"funcionario": True})[0], 201)
-        pendente = sindico.get(f"/api/condominios/{cid}/cadastro")[1]["pendentes"][0]
-        self.assertEqual(pendente["papel"], "portaria")
-        sindico.patch(f"/api/condominios/{cid}/membros/{pendente['id']}", {"status": "ativo"})
-        return sindico, morador, porteiro, cid
-
     def test_fluxo_qr_code(self):
         sindico, morador, porteiro, cid = self.com_porteiro()
         url = f"/api/condominios/{cid}/visitas"

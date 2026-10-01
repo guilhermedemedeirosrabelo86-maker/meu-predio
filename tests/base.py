@@ -86,3 +86,14 @@ class BaseApi(unittest.TestCase):
         membro_id = morador.get("/api/eu")[1]["condominios"][0]["membro_id"]
         self.assertEqual(sindico.patch(f"/api/condominios/{cid}/membros/{membro_id}", {"status": "ativo"})[0], 200)
         return sindico, morador, cid, membro_id
+
+    def com_porteiro(self):
+        """Condomínio com síndico, morador e um funcionário da portaria aprovados."""
+        sindico, morador, cid, _ = self.condominio_com_morador()
+        codigo = sindico.get(f"/api/condominios/{cid}")[1]["codigo_convite"]
+        porteiro = self.novo_usuario("Seu Zé")
+        self.assertEqual(porteiro.post(f"/api/convites/{codigo}/entrar", {"funcionario": True})[0], 201)
+        pendente = sindico.get(f"/api/condominios/{cid}/cadastro")[1]["pendentes"][0]
+        self.assertEqual(pendente["papel"], "portaria")
+        sindico.patch(f"/api/condominios/{cid}/membros/{pendente['id']}", {"status": "ativo"})
+        return sindico, morador, porteiro, cid

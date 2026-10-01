@@ -69,6 +69,12 @@ const ICONES = {
   celular: ['M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z', 'M12 18h.01'],
   olho: ['M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
   'olho-fechado': ['M9.88 9.88a3 3 0 1 0 4.24 4.24', 'M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68', 'M6.61 6.61A13.53 13.53 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61', 'M2 2l20 20'],
+  contas: ['M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1', 'M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4'],
+  energia: ['M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z'],
+  documento: ['M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z', 'M14 2v4a2 2 0 0 0 2 2h4', 'M10 9H8', 'M16 13H8', 'M16 17H8'],
+  recibo: ['M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z', 'M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8', 'M12 17.5v-11'],
+  entrada: ['M17 7 7 17', 'M17 17H7V7'],
+  saida: ['M7 7h10v10', 'M7 17 17 7'],
   atualizar: ['M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5', 'M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16', 'M16 16h5v5'],
 };
 
@@ -350,6 +356,21 @@ export const linkTelefone = (telefone) => `tel:${telefone.replace(/[^\d+]/g, '')
 
 /** ABC1D23 -> ABC-1D23 (só para exibição). */
 export const formatarPlaca = (placa) => `${placa.slice(0, 3)}-${placa.slice(3)}`;
+
+/** 123456 (centavos) -> "R$ 1.234,56". */
+export const dinheiro = (centavos) => (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+/** "1.234,56" -> 123456. */
+export const centavosDe = (texto) => Number(String(texto || '').replace(/\D/g, '')) || 0;
+
+/** Valor em reais enquanto digita, como na maquininha: 1 -> 0,01; 12345 -> 123,45. */
+export function mascaraDinheiro(entrada) {
+  entrada.addEventListener('input', () => {
+    const digitos = entrada.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10);
+    entrada.value = digitos ? (Number(digitos) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '';
+  });
+  return entrada;
+}
 
 export const NOMES_PAPEL = { sindico: 'Síndico', morador: 'Morador', portaria: 'Portaria' };
 
