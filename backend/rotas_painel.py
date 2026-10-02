@@ -1,5 +1,6 @@
 """Resumo para a tela inicial: um número por módulo, numa única chamada."""
 from .comum import exigir_membro, hoje
+from .rotas_taxas import situacao_da_unidade, unidades_atrasadas
 from .web import rota
 
 
@@ -27,6 +28,7 @@ def painel(req, cid):
         "proxima_reserva": None,
         "visitas_hoje": 0,
         "ocorrencias_abertas": 0,
+        "taxa": None,
     }
     if unidade is not None:
         proxima = um(
@@ -40,6 +42,8 @@ def painel(req, cid):
                AND data_inicio <= ? AND data_fim >= ?""",
             unidade, dia, dia,
         )[0]
+        if membro["papel"] in ("sindico", "morador"):
+            resposta["taxa"] = situacao_da_unidade(conn, cid, unidade, hoje())
 
     if membro["papel"] == "sindico":
         resposta["ocorrencias_abertas"] = um(
@@ -52,6 +56,7 @@ def painel(req, cid):
                    WHERE a.condominio_id = ? AND r.status = 'pendente' AND r.data >= ?""",
                 cid, dia,
             )[0],
+            "taxas_atrasadas": unidades_atrasadas(conn, cid, hoje()),
         }
     else:
         resposta["ocorrencias_abertas"] = um(

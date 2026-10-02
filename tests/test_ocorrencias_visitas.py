@@ -167,6 +167,6 @@ class TesteVisitas(BaseApi):
 
         do_sindico = sindico.get(f"/api/condominios/{cid}/painel")[1]
         self.assertEqual(do_sindico["ocorrencias_abertas"], 1)
-        self.assertEqual(do_sindico["pendencias"], {"pedidos_entrada": 0, "reservas": 0})
+        self.assertEqual(do_sindico["pendencias"], {"pedidos_entrada": 0, "reservas": 0, "taxas_atrasadas": 0})
         self.assertEqual(do_sindico["portaria"]["esperados"], 1)
         self.assertEqual(porteiro.get(f"/api/condominios/{cid}/painel")[1]["portaria"]["esperados"], 1)

@@ -1,13 +1,13 @@
 // Service worker: deixa o app abrir sem internet (mostrando a última versão)
 // e abre o mural quando o morador toca numa notificação.
-const CACHE = 'meu-predio-v8';
+const CACHE = 'meu-predio-v10';
 const ARQUIVOS = [
   '/', '/index.html', '/manifest.webmanifest', '/icone.svg', '/icone-192.png', '/icone-512.png',
   '/css/app.css', '/fonts/inter.woff2', '/fonts/fraunces.woff2',
-  '/js/app.js', '/js/api.js', '/js/estado.js', '/js/notificacoes.js', '/js/qrcode.js', '/js/ui.js',
+  '/js/abertura.js', '/js/app.js', '/js/api.js', '/js/estado.js', '/js/notificacoes.js', '/js/qrcode.js', '/js/ui.js',
   '/js/telas/avisos.js', '/js/telas/celular.js', '/js/telas/condominios.js', '/js/telas/contas.js', '/js/telas/conta.js',
   '/js/telas/inicio.js', '/js/telas/menu.js', '/js/telas/moradores.js', '/js/telas/ocorrencias.js', '/js/telas/passe.js',
-  '/js/telas/perfil.js', '/js/telas/portaria.js', '/js/telas/reservas.js', '/js/telas/unidade.js',
+  '/js/telas/perfil.js', '/js/telas/portaria.js', '/js/telas/reservas.js', '/js/telas/taxas.js', '/js/telas/unidade.js',
   '/js/telas/visitas.js',
 ];
 

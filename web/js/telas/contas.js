@@ -1,5 +1,6 @@
 import { del, enviarArquivo, get, patch, post } from '../api.js';
 import { estado, navegar, recarregar } from '../estado.js';
+import { definirMesDasTaxas, nomeMes as nomeDoMes, SITUACAO } from './taxas.js';
 import {
   abrirFotos, aoEnviar, cabecalho, campo, centavosDe, comErro, confirmar, dinheiro, erroForm, formatarDia, h,
   icone, item, mascaraDinheiro, maiuscula, opcoes, pill, reduzirFoto, secao, tile, toast, vazio,
@@ -51,7 +52,11 @@ export async function telaContas() {
     mesVisto = null;
   }
   const sindico = estado.membro.papel === 'sindico';
-  const dados = await get(`${urlBase()}${mesVisto ? `?mes=${mesVisto}` : ''}`);
+  const [dados, taxas] = await Promise.all([
+    get(`${urlBase()}${mesVisto ? `?mes=${mesVisto}` : ''}`),
+    sindico ? get(`/api/condominios/${cid}/taxas${mesVisto ? `?mes=${mesVisto}` : ''}`)
+      : estado.membro.unidade_id ? get(`/api/condominios/${cid}/taxas/minha`) : null,
+  ]);
   const mesAtual = dados.hoje.slice(0, 7);
   mesVisto = dados.mes;
   const { resumo } = dados;
@@ -110,10 +115,37 @@ export async function telaContas() {
     h('div', { class: 'colunas' },
       h('div', { class: 'pilha' },
         painel,
+        taxas && cartaoTaxa(taxas, sindico),
         secao('Lançamentos', lista)),
       h('div', { class: 'pilha' },
         dados.categorias.length > 0 && secao('Para onde foi o dinheiro', graficoCategorias(dados.categorias, resumo.saidas)),
         secao('Últimos meses', historico(dados.historico, mesVisto, irPara)))));
+}
+
+/** Atalho para a taxa condominial: resumo do mês (síndico) ou a situação da própria unidade (morador). */
+function cartaoTaxa(taxas, sindico) {
+  let sub;
+  let fim = null;
+  if (!taxas.config.valor_centavos) {
+    if (!sindico) return null;
+    sub = 'Defina o valor para acompanhar quem pagou';
+  } else if (sindico) {
+    const { pagas, unidades, atrasadas } = taxas.totais;
+    sub = `${nomeDoMes(taxas.mes)}: ${pagas} de ${unidades} pagaram`;
+    if (atrasadas) fim = pill(`${atrasadas} em atraso`, 'vermelho');
+  } else {
+    const atual = taxas.meses[0];
+    sub = `${nomeDoMes(atual.mes)} · vence dia ${taxas.config.vencimento}`;
+    fim = pill(...SITUACAO[atual.situacao]);
+  }
+  return h('div', { class: 'cartao lista' }, item({
+    inicio: tile('unidade', 'contas'),
+    titulo: sindico ? 'Taxa condominial' : 'Minha taxa',
+    sub,
+    fim,
+    href: '#/contas/taxas',
+    onclick: sindico ? () => definirMesDasTaxas(taxas.mes) : undefined,
+  }));
 }
 
 /** Barras horizontais, uma cor só: o tamanho mostra o peso de cada categoria nas saídas. */

@@ -13,6 +13,7 @@ A experiência foi pensada para parecer um app nativo: transições entre telas 
 - **Reservas:** áreas comuns com regras, antecedência, limite por unidade e aprovação opcional, num calendário mensal.
 - **Ocorrências:** o morador relata com categoria e até 5 fotos (reduzidas no celular antes do envio). O síndico responde numa conversa e marca como "em andamento" ou "resolvida". Só o síndico e a própria unidade veem.
 - **Prestação de contas:** o síndico lança entradas e saídas por categoria, com a foto da nota ou do recibo. Síndico e moradores veem o saldo em caixa, o que entrou e saiu no mês, para onde foi o dinheiro (gráfico por categoria) e os últimos 6 meses. A portaria não vê as finanças.
+- **Taxa condominial:** o síndico define o valor e o dia do vencimento e marca, mês a mês, quais unidades pagaram. Cada pagamento vira uma entrada na prestação de contas (e excluir a entrada desfaz o pagamento). O síndico vê quem está em atraso no Início; o morador vê só a situação da própria unidade.
 - **Visitantes por QR Code:** o morador libera a visita (um dia ou vários) e envia o QR pelo WhatsApp. O visitante abre um link público com o QR. A portaria lê com a câmera do celular (o QR abre a tela de validação), confere se está liberado e registra a entrada. Também dá para digitar o código curto.
 
 ## Como rodar
@@ -42,7 +43,7 @@ O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos e comprovant
 python -m unittest -v
 ```
 
-Os testes sobem o servidor numa porta livre e exercitam a API inteira: permissões, convites, avisos, veículos, reservas, ocorrências com fotos, visitas, portaria e prestação de contas.
+Os testes sobem o servidor numa porta livre e exercitam a API inteira: permissões, convites, avisos, veículos, reservas, ocorrências com fotos, visitas, portaria, prestação de contas e taxa condominial.
 
 O gerador de QR Code (`web/js/qrcode.js`) foi conferido contra a biblioteca Python `qrcode` (saída idêntica módulo a módulo nas 8 máscaras) e com o leitor zxing.
 
@@ -63,6 +64,7 @@ backend/
   rotas_ocorrencias.py   ocorrências, fotos e conversa
   rotas_visitas.py       visitas por QR Code e portaria
   rotas_contas.py        prestação de contas e comprovantes
+  rotas_taxas.py         taxa condominial: quem pagou em cada mês
   rotas_painel.py        resumo da tela inicial
 web/
   index.html, sw.js, manifest.webmanifest
@@ -76,7 +78,7 @@ tests/                   base.py (servidor de teste) e um arquivo por módulo
 
 ## Próximos passos
 
-1. **Controle de pagamento da taxa** por unidade, ligado à prestação de contas: o síndico marca quem pagou, e cada morador vê a própria situação. Depois, fechamento do mês e balancete em PDF.
+1. **Fechamento do mês** (lançamentos travados depois de fechado) e **balancete em PDF** para a assembleia.
 2. **Hospedagem com HTTPS** e **Web Push**, para notificar com o app fechado. Com HTTPS, o celular do morador também passa a instalar o app e a ler o QR Code pela câmera dentro do próprio app (hoje isso só funciona em `localhost`).
 3. **Alertas automáticos:** pedido de reserva, resposta em ocorrência e chegada de visitante.
 4. **Recuperação de senha** por e-mail e limite de tentativas de login.

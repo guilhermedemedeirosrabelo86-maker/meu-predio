@@ -6,6 +6,7 @@ import { iniciarVerificacao, pararVerificacao } from './notificacoes.js';
 import { telaAvisos, telaEditarAviso } from './telas/avisos.js';
 import { telaConvite, telaCondominios, telaNovoCondominio } from './telas/condominios.js';
 import { telaContas, telaEditarLancamento, telaLancamento } from './telas/contas.js';
+import { telaTaxas } from './telas/taxas.js';
 import { telaCelular } from './telas/celular.js';
 import { telaCriarConta, telaEntrar } from './telas/conta.js';
 import { telaInicio } from './telas/inicio.js';
@@ -53,8 +54,9 @@ const ROTAS = [
   { padrao: 'visitas/:id', tela: telaVisita, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'visitas' },
   { padrao: 'portaria', tela: telaPortaria, condominio: true, papeis: EQUIPE, aba: 'portaria' },
   { padrao: 'portaria/v/:token', tela: telaValidarVisita, aba: 'portaria' },
-  // 'contas/novo' precisa vir antes de 'contas/:id'
+  // 'contas/novo' e 'contas/taxas' precisam vir antes de 'contas/:id'
   { padrao: 'contas', tela: telaContas, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'contas' },
+  { padrao: 'contas/taxas', tela: telaTaxas, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'contas' },
   { padrao: 'contas/novo', tela: telaEditarLancamento, condominio: true, papeis: ['sindico'], aba: 'contas' },
   { padrao: 'contas/:id', tela: telaLancamento, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'contas' },
   { padrao: 'contas/:id/editar', tela: telaEditarLancamento, condominio: true, papeis: ['sindico'], aba: 'contas' },

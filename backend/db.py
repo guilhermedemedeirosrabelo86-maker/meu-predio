@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS condominios (
     endereco        TEXT NOT NULL DEFAULT '',
     codigo_convite  TEXT NOT NULL UNIQUE,
     plano           TEXT NOT NULL DEFAULT 'gratis',
+    taxa_centavos   INTEGER NOT NULL DEFAULT 0,   -- valor da taxa mensal; 0 = ainda não definido
+    taxa_vencimento INTEGER NOT NULL DEFAULT 10,  -- dia do mês
     criado_em       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -177,6 +179,17 @@ CREATE TABLE IF NOT EXISTS lancamentos (
     criado_em           TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Taxa paga por uma unidade num mês. O valor e a data ficam no lançamento de entrada que o
+-- pagamento cria; excluir o lançamento na prestação de contas desfaz o pagamento.
+CREATE TABLE IF NOT EXISTS pagamentos (
+    id              INTEGER PRIMARY KEY,
+    unidade_id      INTEGER NOT NULL REFERENCES unidades(id) ON DELETE CASCADE,
+    mes             TEXT NOT NULL,
+    lancamento_id   INTEGER NOT NULL UNIQUE REFERENCES lancamentos(id) ON DELETE CASCADE,
+    criado_em       TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (unidade_id, mes)
+);
+
 CREATE INDEX IF NOT EXISTS idx_ocorrencias_condominio ON ocorrencias (condominio_id, status);
 CREATE INDEX IF NOT EXISTS idx_visitas_condominio ON visitas (condominio_id, data_inicio, data_fim);
 CREATE INDEX IF NOT EXISTS idx_visitas_unidade ON visitas (unidade_id);
@@ -226,3 +239,8 @@ def _migrar(conn):
             """
         )
         conn.execute("PRAGMA foreign_keys = ON")
+
+    colunas = {linha["name"] for linha in conn.execute("PRAGMA table_info(condominios)")}
+    if "taxa_centavos" not in colunas:
+        conn.execute("ALTER TABLE condominios ADD COLUMN taxa_centavos INTEGER NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE condominios ADD COLUMN taxa_vencimento INTEGER NOT NULL DEFAULT 10")

@@ -15,6 +15,8 @@ export function telaMenu() {
     papel !== 'portaria' && ['visitas', 'visitas', 'visitas', 'Visitantes', 'Libere a entrada por QR Code'],
     papel !== 'morador' && ['portaria', 'portaria', 'portaria', 'Portaria', 'Validar visitantes e registrar entradas'],
     papel !== 'portaria' && ['contas', 'contas', 'contas', 'Prestação de contas', 'Entradas, saídas e saldo em caixa'],
+    papel === 'sindico' && ['contas/taxas', 'unidade', 'contas', 'Taxa condominial', 'Quem já pagou em cada mês'],
+    papel === 'morador' && membro.unidade_id && ['contas/taxas', 'unidade', 'contas', 'Minha taxa', 'Situação da taxa da sua unidade'],
     papel === 'sindico' && ['moradores', 'moradores', 'moradores', 'Moradores', 'Convites, unidades e cadastro'],
     papel === 'sindico' && ['reservas/areas', 'editar', 'reservas', 'Áreas comuns', 'Regras e aprovação das reservas'],
     membro.unidade_id && ['unidade', 'carro', 'unidade', 'Minha unidade', 'Veículos cadastrados'],

@@ -28,6 +28,8 @@ export async function telaInicio() {
           painel.avisos_nao_lidos === 1 ? '1 aviso novo' : `${painel.avisos_nao_lidos} avisos novos`),
         !sindico && painel.visitas_hoje > 0 && h('a', { href: '#/visitas' }, icone('visitas'),
           painel.visitas_hoje === 1 ? '1 visita hoje' : `${painel.visitas_hoje} visitas hoje`),
+        !sindico && painel.taxa && (painel.taxa.situacao !== 'paga' || painel.taxa.meses_atrasados > 0) && h('a', { href: '#/contas/taxas' }, icone('contas'),
+          painel.taxa.situacao === 'atrasada' || painel.taxa.meses_atrasados > 0 ? 'Taxa em atraso' : `Taxa vence dia ${painel.taxa.vencimento}`),
         sindico && painel.portaria.esperados > 0 && h('a', { href: '#/portaria' }, icone('portaria'),
           `${painel.portaria.esperados} esperado${painel.portaria.esperados === 1 ? '' : 's'} hoje`))),
 
@@ -80,9 +82,9 @@ function metricaReserva(reserva) {
 }
 
 function pendencias(painel) {
-  const { pedidos_entrada: pedidos, reservas } = painel.pendencias;
+  const { pedidos_entrada: pedidos, reservas, taxas_atrasadas: taxas } = painel.pendencias;
   const ocorrencias = painel.ocorrencias_abertas;
-  if (!pedidos && !reservas && !ocorrencias) return null;
+  if (!pedidos && !reservas && !ocorrencias && !taxas) return null;
   const linhas = [
     pedidos > 0 && item({
       inicio: tile('moradores'),
@@ -95,6 +97,12 @@ function pendencias(painel) {
       titulo: reservas === 1 ? '1 reserva para aprovar' : `${reservas} reservas para aprovar`,
       sub: 'Áreas que exigem sua aprovação',
       href: '#/reservas',
+    }),
+    taxas > 0 && item({
+      inicio: tile('contas', 'contas'),
+      titulo: taxas === 1 ? '1 unidade com taxa atrasada' : `${taxas} unidades com taxa atrasada`,
+      sub: 'Registre os pagamentos recebidos ou cobre os moradores',
+      href: '#/contas/taxas',
     }),
     ocorrencias > 0 && item({
       inicio: tile('ocorrencias'),
