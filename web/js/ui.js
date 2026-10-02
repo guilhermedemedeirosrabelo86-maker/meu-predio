@@ -100,7 +100,7 @@ export function icone(nome, classe = 'icone') {
 /** Quadrado arredondado colorido com ícone (cor = nome do módulo). */
 export const tile = (nome, cor = nome, extra = '') => h('span', { class: `tile cor-${cor} ${extra}`.trim() }, icone(nome));
 
-const CORES_AVATAR = ['#1e4a3b', '#2f7d5b', '#c8572f', '#b23a2c', '#2c6e8f', '#7a4e7e', '#b07f22', '#3f6b6a', '#8c5a3c', '#5e584e'];
+const CORES_AVATAR = ['#0f4c5c', '#2f7d5b', '#c8572f', '#b23a2c', '#2c6e8f', '#7a4e7e', '#b07f22', '#3f6b6a', '#8c5a3c', '#5e584e'];
 
 export function avatar(nome, tamanho = '') {
   const partes = (nome || '?').trim().split(/\s+/);

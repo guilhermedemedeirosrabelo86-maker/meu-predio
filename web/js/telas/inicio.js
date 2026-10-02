@@ -38,15 +38,15 @@ export async function telaInicio() {
         .filter(([rota]) => rota !== 'unidade' || membro.unidade_id)
         .map(([rota, cor, rotulo]) => h('a', { class: 'atalho', href: `#/${rota}` }, tile(cor), rotulo))),
 
-    h('div', { class: 'metricas' },
-      metrica('avisos', painel.avisos_nao_lidos, painel.avisos_nao_lidos === 1 ? 'aviso não lido' : 'avisos não lidos', 'avisos'),
+    h('nav', { class: 'cartao resumo-numeros', 'aria-label': 'Resumo' },
+      numero('avisos', painel.avisos_nao_lidos, painel.avisos_nao_lidos === 1 ? 'aviso novo' : 'avisos novos', 'avisos'),
       sindico
-        ? metrica('portaria', painel.portaria.esperados, 'visitantes esperados hoje', 'portaria')
-        : metrica('visitas', painel.visitas_hoje, painel.visitas_hoje === 1 ? 'visita liberada hoje' : 'visitas liberadas hoje', 'visitas'),
-      metrica('ocorrencias', painel.ocorrencias_abertas, painel.ocorrencias_abertas === 1 ? 'ocorrência em aberto' : 'ocorrências em aberto', 'ocorrencias'),
+        ? numero('portaria', painel.portaria.esperados, painel.portaria.esperados === 1 ? 'visita hoje' : 'visitas hoje', 'portaria')
+        : numero('visitas', painel.visitas_hoje, painel.visitas_hoje === 1 ? 'visita hoje' : 'visitas hoje', 'visitas'),
+      numero('ocorrencias', painel.ocorrencias_abertas, painel.ocorrencias_abertas === 1 ? 'ocorrência aberta' : 'ocorrências abertas', 'ocorrencias'),
       sindico
-        ? metrica('entrar', painel.portaria.entradas, 'entradas nas últimas 24h', 'portaria', 'reservas')
-        : metricaReserva(painel.proxima_reserva)),
+        ? numero('entrar', painel.portaria.entradas, 'entradas em 24h', 'portaria', 'reservas')
+        : numero('reservas', painel.proxima_reserva ? 1 : 0, painel.proxima_reserva ? 'reserva marcada' : 'reservas marcadas', 'reservas')),
 
     h('div', { class: 'grade' },
     sindico && pendencias(painel),
@@ -67,18 +67,12 @@ export async function telaInicio() {
     })))));
 }
 
-function metrica(nomeIcone, valor, rotulo, rota, cor = nomeIcone) {
-  return h('a', { class: 'metrica', href: `#/${rota}` },
+/** Um número do resumo: ícone, valor e rótulo curto. Zero fica apagado para não chamar atenção. */
+function numero(nomeIcone, valor, rotulo, rota, cor = nomeIcone) {
+  return h('a', { class: `numero${valor ? '' : ' zero'}`, href: `#/${rota}` },
     tile(nomeIcone, cor),
-    h('div', {}, contar(h('div', { class: 'valor' }), valor), h('div', { class: 'rotulo' }, rotulo)));
-}
-
-function metricaReserva(reserva) {
-  return h('a', { class: 'metrica', href: '#/reservas' },
-    tile('reservas'),
-    h('div', {},
-      h('div', { class: 'valor' }, reserva ? `${reserva.data.slice(8, 10)}/${reserva.data.slice(5, 7)}` : '—'),
-      h('div', { class: 'rotulo' }, reserva ? `próxima reserva: ${reserva.area}` : 'nenhuma reserva marcada')));
+    contar(h('span', { class: 'valor' }), valor),
+    h('span', { class: 'rotulo' }, rotulo));
 }
 
 function pendencias(painel) {

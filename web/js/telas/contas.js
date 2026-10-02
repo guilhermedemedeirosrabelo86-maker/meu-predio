@@ -108,8 +108,8 @@ export async function telaContas() {
     }));
 
   return h('div', { class: 'pagina' },
-    cabecalho('Prestação de contas', {
-      subtitulo: 'Entradas e saídas do condomínio',
+    cabecalho('Contas', {
+      subtitulo: 'Prestação de contas do condomínio',
       acao: sindico && h('a', { class: 'botao primario', href: '#/contas/novo' }, icone('mais'), 'Lançar'),
     }),
     h('div', { class: 'colunas' },
