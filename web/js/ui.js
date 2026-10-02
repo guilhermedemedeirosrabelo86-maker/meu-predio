@@ -258,6 +258,9 @@ export function abrirAbertura(texto) {
 export async function fecharAbertura(el, minimo = 1200) {
   if (!el?.isConnected || el.dataset.fechando) return;
   el.dataset.fechando = '1';
+  if (!el.dataset.desde) {
+    try { sessionStorage.setItem('aberturaVista', '1'); } catch { /* sem armazenamento */ }
+  }
   if (semMovimento()) return el.remove();
   // Sem `desde`, é a abertura do index.html, que aparece junto com a página.
   await esperar(Math.max(0, minimo - (performance.now() - Number(el.dataset.desde || 0))));
