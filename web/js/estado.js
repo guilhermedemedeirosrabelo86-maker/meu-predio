@@ -35,12 +35,23 @@ export function escolherCondominio(id) {
   gravarLocal('condominioAtual', id);
 }
 
-export function navegar(rota) {
-  if (location.hash === `#/${rota}`) recarregar();
-  else location.hash = `/${rota}`;
+let renderizador = () => {};
+
+/**
+ * Vai para uma tela mudando o endereço pela API de histórico, sem navegação do navegador.
+ * (Mudar o # direto faz o Safari do iPhone recarregar a página inteira a cada troca.)
+ */
+export function irPara(rota, { substituir = false } = {}) {
+  const alvo = `#/${rota}`;
+  if (substituir) history.replaceState(null, '', alvo);
+  else history.pushState(null, '', alvo);
+  return renderizador();
 }
 
-let renderizador = () => {};
+export function navegar(rota) {
+  if (location.hash === `#/${rota}`) recarregar();
+  else irPara(rota);
+}
 
 export function definirRenderizador(funcao) {
   renderizador = funcao;

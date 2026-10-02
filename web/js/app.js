@@ -2,7 +2,7 @@ import {
   ErroApi, limparCache, preCarregar, quandoMudar, rastrearLeituras,
 } from './api.js';
 import {
-  carregarUsuario, definirRenderizador, escolherCondominio, estado, lerLocal, limparSessao,
+  carregarUsuario, definirRenderizador, escolherCondominio, estado, irPara, lerLocal, limparSessao,
 } from './estado.js';
 import { iniciarVerificacao, pararVerificacao } from './notificacoes.js';
 import { telaAvisos, telaEditarAviso } from './telas/avisos.js';
@@ -190,7 +190,7 @@ async function renderizar({ manterRolagem = false } = {}) {
   const achado = casarRota(caminho);
   const destino = redirecionamento(achado, caminho);
   if (destino !== null) {
-    location.replace(`#/${destino}`);
+    irPara(destino, { substituir: true });
     return;
   }
 
@@ -215,7 +215,7 @@ async function renderizar({ manterRolagem = false } = {}) {
     if (e instanceof ErroApi && e.status === 401 && !rota.aberta) {
       limparSessao();
       pararVerificacao();
-      location.replace('#/entrar');
+      irPara('entrar', { substituir: true });
       return;
     }
     conteudo = cartaoFalha(e);
@@ -375,7 +375,7 @@ function alternarSeletor(evento) {
   if (!estado.membro) return; // sem condomínio aberto, a lista é a única tela
   evento.preventDefault();
   if (origemSeletor) history.back();
-  else location.hash = `/${telaPadrao()}`;
+  else irPara(telaPadrao());
 }
 
 // O título grande da página "sobe" para a barra superior quando sai da tela.
@@ -460,7 +460,27 @@ function instalarPuxarParaAtualizar() {
 }
 
 definirRenderizador(renderizar);
-window.addEventListener('hashchange', () => renderizar());
+// Links internos (href="#/...") trocam de tela pela API de histórico, sem navegação do navegador.
+document.addEventListener('click', (evento) => {
+  if (evento.defaultPrevented || evento.button !== 0 || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return;
+  const link = evento.target.closest?.('a[href^="#/"]');
+  if (!link || link.target || link.hasAttribute('download')) return;
+  evento.preventDefault();
+  if (link.getAttribute('href') !== location.hash) irPara(link.getAttribute('href').slice(2));
+});
+
+// Voltar/avançar do aparelho e endereço digitado à mão. Os dois eventos podem vir juntos: desenha uma vez.
+let desenhoAgendado = false;
+const desenharAgora = () => {
+  if (desenhoAgendado) return;
+  desenhoAgendado = true;
+  queueMicrotask(() => {
+    desenhoAgendado = false;
+    renderizar();
+  });
+};
+window.addEventListener('popstate', desenharAgora);
+window.addEventListener('hashchange', desenharAgora);
 window.addEventListener('scroll', atualizarBarraTopo, { passive: true });
 window.addEventListener('beforeinstallprompt', (evento) => {
   evento.preventDefault();
