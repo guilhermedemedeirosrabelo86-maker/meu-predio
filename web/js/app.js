@@ -66,23 +66,24 @@ const ROTAS = [
   { padrao: 'unidade', tela: telaUnidade, condominio: true, aba: 'unidade' },
 ];
 
-// Navegação. `celular: false` = só no menu lateral do computador; `computador: false` = só na barra inferior.
+// Navegação. A barra de baixo (celular) mostra o que cada perfil mais usa; o resto fica na grade do Início
+// e em "Mais". `celular: false` = só no menu lateral do computador; `computador: false` = só na barra de baixo.
 const NAVEGACAO = {
   morador: [
     { id: 'inicio', rotulo: 'Início' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },
     { id: 'visitas', rotulo: 'Visitas' }, { id: 'ocorrencias', rotulo: 'Ocorrências', celular: false },
     { id: 'contas', rotulo: 'Contas', celular: false }, { id: 'unidade', rotulo: 'Minha unidade', celular: false },
-    { id: 'menu', rotulo: 'Menu', computador: false },
+    { id: 'menu', rotulo: 'Mais', computador: false },
   ],
   sindico: [
-    { id: 'inicio', rotulo: 'Início' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },
-    { id: 'ocorrencias', rotulo: 'Ocorrências' }, { id: 'moradores', rotulo: 'Moradores', celular: false },
-    { id: 'visitas', rotulo: 'Visitas', celular: false }, { id: 'portaria', rotulo: 'Portaria', celular: false },
-    { id: 'contas', rotulo: 'Contas', celular: false }, { id: 'menu', rotulo: 'Menu', computador: false },
+    { id: 'inicio', rotulo: 'Início' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'contas', rotulo: 'Contas' },
+    { id: 'moradores', rotulo: 'Moradores' }, { id: 'reservas', rotulo: 'Reservas', celular: false },
+    { id: 'ocorrencias', rotulo: 'Ocorrências', celular: false }, { id: 'visitas', rotulo: 'Visitas', celular: false },
+    { id: 'portaria', rotulo: 'Portaria', celular: false }, { id: 'menu', rotulo: 'Mais', computador: false },
   ],
   portaria: [
     { id: 'portaria', rotulo: 'Portaria' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },
-    { id: 'menu', rotulo: 'Menu' },
+    { id: 'menu', rotulo: 'Mais' },
   ],
 };
 
@@ -359,7 +360,8 @@ function criarMoldura(chave) {
       membro && icone('abaixo', 'icone fraco')),
     h('div', { class: 'titulo-topo', 'aria-hidden': 'true' }),
     h('span', { class: 'espaco' }),
-    h('a', { href: '#/perfil', 'aria-label': 'Meu perfil' }, avatar(estado.usuario.nome, 'pequeno')));
+    // No celular, o avatar abre "Mais" (perfil no topo, todos os módulos e a conta), que fica destacado na barra.
+    h('a', { href: membro ? '#/menu' : '#/perfil', 'aria-label': 'Meu perfil e mais opções' }, avatar(estado.usuario.nome, 'pequeno')));
 
   const main = h('main', { class: 'conteudo' });
   const el = h('div', { class: nav ? 'app com-nav' : 'app' }, nav, topo, main);

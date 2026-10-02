@@ -1,6 +1,6 @@
 // Service worker: deixa o app abrir sem internet (mostrando a última versão)
 // e abre o mural quando o morador toca numa notificação.
-const CACHE = 'meu-predio-v14';
+const CACHE = 'meu-predio-v16';
 const ARQUIVOS = [
   '/', '/index.html', '/manifest.webmanifest', '/icone.svg', '/icone-192.png', '/icone-512.png',
   '/css/app.css', '/fonts/inter.woff2', '/fonts/fraunces.woff2',

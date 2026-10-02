@@ -2,7 +2,7 @@ import { get } from '../api.js';
 import { estado } from '../estado.js';
 import { atualizarContador } from '../notificacoes.js';
 import {
-  contar, formatarDia, h, icone, item, maiuscula, pill, primeiroNome, quando, saudacao, secao, tile,
+  formatarDia, h, icone, item, maiuscula, pill, primeiroNome, quando, saudacao, secao, tile,
 } from '../ui.js';
 
 /** Painel inicial: atalhos, pendências e um resumo de cada módulo. */
@@ -12,11 +12,36 @@ export async function telaInicio() {
   const painel = await get(`/api/condominios/${membro.condominio_id}/painel`);
   atualizarContador(painel.avisos_nao_lidos);
 
-  const atalhos = sindico
-    ? [['avisos/novo', 'avisos', 'Novo aviso'], ['moradores', 'moradores', 'Moradores'],
-      ['reservas', 'reservas', 'Reservas'], ['portaria', 'portaria', 'Portaria']]
-    : [['visitas/nova', 'visitas', 'Liberar visita'], ['reservas', 'reservas', 'Reservar'],
-      ['ocorrencias/nova', 'ocorrencias', 'Ocorrência'], ['unidade', 'unidade', 'Minha unidade']];
+  // Todos os módulos do perfil, para nada ficar escondido. O selo mostra o que pede atenção.
+  const pend = painel.pendencias || {};
+  const taxaAtrasada = painel.taxa && (painel.taxa.situacao === 'atrasada' || painel.taxa.meses_atrasados > 0);
+  const modulos = (sindico
+    ? [
+      ['avisos', 'avisos', 'avisos', 'Avisos', painel.avisos_nao_lidos],
+      ['contas', 'contas', 'contas', 'Contas'],
+      ['moradores', 'moradores', 'moradores', 'Moradores', pend.pedidos_entrada],
+      ['reservas', 'reservas', 'reservas', 'Reservas', pend.reservas],
+      ['ocorrencias', 'ocorrencias', 'ocorrencias', 'Ocorrências', painel.ocorrencias_abertas],
+      ['visitas', 'visitas', 'visitas', 'Visitas'],
+      ['portaria', 'portaria', 'portaria', 'Portaria'],
+      ['contas/taxas', 'recibo', 'contas', 'Taxas', pend.taxas_atrasadas],
+    ]
+    : [
+      ['avisos', 'avisos', 'avisos', 'Avisos', painel.avisos_nao_lidos],
+      ['reservas', 'reservas', 'reservas', 'Reservas'],
+      ['visitas', 'visitas', 'visitas', 'Visitas'],
+      ['ocorrencias', 'ocorrencias', 'ocorrencias', 'Ocorrências', painel.ocorrencias_abertas],
+      ['contas', 'contas', 'contas', 'Contas'],
+      painel.taxa && ['contas/taxas', 'recibo', 'contas', 'Minha taxa', taxaAtrasada ? '!' : 0],
+      membro.unidade_id && ['unidade', 'carro', 'unidade', 'Minha unidade'],
+    ]).filter(Boolean);
+  // Completa a última linha (4 por linha) com atalhos úteis, para a grade sempre fechar certinho.
+  const complementos = [
+    ['perfil', 'perfil', 'neutra', 'Meu perfil'],
+    ['menu', 'menu', 'neutra', 'Mais'],
+    ['condominios', 'trocar', 'neutra', 'Condomínios'],
+  ];
+  while (modulos.length % 4 && complementos.length) modulos.push(complementos.shift());
 
   return h('div', { class: 'pagina' },
     h('header', { class: 'hero topo-pagina' },
@@ -33,22 +58,14 @@ export async function telaInicio() {
         sindico && painel.portaria.esperados > 0 && h('a', { href: '#/portaria' }, icone('portaria'),
           `${painel.portaria.esperados} esperado${painel.portaria.esperados === 1 ? '' : 's'} hoje`))),
 
-    h('nav', { class: 'atalhos', 'aria-label': 'Atalhos' },
-      atalhos
-        .filter(([rota]) => rota !== 'unidade' || membro.unidade_id)
-        .map(([rota, cor, rotulo]) => h('a', { class: 'atalho', href: `#/${rota}` }, tile(cor), rotulo))),
+    h('nav', { class: 'atalhos', 'aria-label': 'Módulos do condomínio' },
+      modulos.map(([rota, nomeIcone, cor, rotulo, selo]) => {
+        const icone = tile(nomeIcone, cor);
+        if (selo) icone.append(h('span', { class: 'selo', 'aria-label': 'Pede atenção' }, typeof selo === 'number' && selo > 9 ? '9+' : selo));
+        return h('a', { class: 'atalho', href: `#/${rota}` }, icone, rotulo);
+      })),
 
-    h('nav', { class: 'cartao resumo-numeros', 'aria-label': 'Resumo' },
-      numero('avisos', painel.avisos_nao_lidos, painel.avisos_nao_lidos === 1 ? 'aviso novo' : 'avisos novos', 'avisos'),
-      sindico
-        ? numero('portaria', painel.portaria.esperados, painel.portaria.esperados === 1 ? 'visita hoje' : 'visitas hoje', 'portaria')
-        : numero('visitas', painel.visitas_hoje, painel.visitas_hoje === 1 ? 'visita hoje' : 'visitas hoje', 'visitas'),
-      numero('ocorrencias', painel.ocorrencias_abertas, painel.ocorrencias_abertas === 1 ? 'ocorrência aberta' : 'ocorrências abertas', 'ocorrencias'),
-      sindico
-        ? numero('entrar', painel.portaria.entradas, 'entradas em 24h', 'portaria', 'reservas')
-        : numero('reservas', painel.proxima_reserva ? 1 : 0, painel.proxima_reserva ? 'reserva marcada' : 'reservas marcadas', 'reservas')),
-
-    h('div', { class: 'grade' },
+    h('div', { class: 'grade sem-sobras' },
     sindico && pendencias(painel),
     painel.ultimo_aviso && secao('Último aviso', h('div', { class: 'cartao lista' }, item({
       inicio: tile('avisos'),
@@ -65,14 +82,6 @@ export async function telaInicio() {
       fim: painel.proxima_reserva.status === 'pendente' ? pill('Aguardando', 'amarelo') : pill('Confirmada', 'verde'),
       href: '#/reservas',
     })))));
-}
-
-/** Um número do resumo: ícone, valor e rótulo curto. Zero fica apagado para não chamar atenção. */
-function numero(nomeIcone, valor, rotulo, rota, cor = nomeIcone) {
-  return h('a', { class: `numero${valor ? '' : ' zero'}`, href: `#/${rota}` },
-    tile(nomeIcone, cor),
-    contar(h('span', { class: 'valor' }), valor),
-    h('span', { class: 'rotulo' }, rotulo));
 }
 
 function pendencias(painel) {

@@ -23,7 +23,7 @@ export async function telaPerfil() {
   const u = estado.usuario;
 
   return h('div', { class: 'pagina estreita' },
-    cabecalho('Perfil', { voltar: membro ? { rota: 'menu', texto: 'Menu' } : { rota: 'condominios' } }),
+    cabecalho('Perfil', { voltar: membro ? { rota: 'menu', texto: 'Mais' } : { rota: 'condominios' } }),
     h('section', { class: 'cartao' },
       h('div', { class: 'perfil-topo' },
         avatar(u.nome, 'grande'),

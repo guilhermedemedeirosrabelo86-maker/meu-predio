@@ -3,11 +3,12 @@
 App para condomínios pequenos (8 a 40 unidades) geridos por síndico morador.
 É um web app instalável no celular (PWA), com menu lateral e layout em colunas no computador, e tema claro/escuro automático. A identidade visual usa azul-petróleo e pêssego, com títulos serifados e ícones em quadradinhos de fundo suave.
 
-A experiência foi pensada para parecer um app nativo: a troca de abas é instantânea, com um destaque que desliza na barra de baixo, a rolagem é restaurada ao voltar, o título grande sobe para a barra ao rolar, puxar para atualizar, deslizar no calendário e nas fotos, botões com spinner e vibração leve no Android, máscaras de telefone e placa, e as fontes Inter e Fraunces embutidas (licenças em `web/fonts/`). Quem configura "reduzir movimento" no sistema recebe o app sem animações.
+A experiência foi pensada para parecer um app nativo: a troca de abas é instantânea e sem recarregar a página (o endereço muda pela API de histórico, o que evita o Safari do iPhone recarregar tudo a cada aba), com um destaque que desliza na barra de baixo, a rolagem é restaurada ao voltar, o título grande sobe para a barra ao rolar, puxar para atualizar, deslizar no calendário e nas fotos, botões com spinner e vibração leve no Android, máscaras de telefone e placa, e as fontes Inter e Fraunces embutidas (licenças em `web/fonts/`). Quem configura "reduzir movimento" no sistema recebe o app sem animações.
 
 Para rodar liso no celular, as telas já visitadas abrem na hora com os últimos dados e se atualizam sozinhas em segundo plano, e os dados das abas principais são buscados assim que o Início aparece. Salvar qualquer coisa descarta esse cache. O servidor mantém a conexão aberta entre os pedidos, compacta os arquivos de texto e responde "não mudou" para os que o navegador já tem.
 
-- **Início:** painel com atalhos, pendências do síndico e um resumo de cada módulo.
+- **Início:** grade com todos os módulos do perfil (nada fica escondido), com selos no que pede atenção, pendências do síndico, último aviso e próxima reserva.
+- **Navegação:** a barra de baixo do celular mostra o que cada perfil mais usa (síndico: Início, Avisos, Contas, Moradores; morador: Início, Avisos, Reservas, Visitas) e "Mais" reúne o perfil, todos os módulos e a conta. No computador, tudo fica no menu lateral.
 - **Conta e acesso:** cadastro, login e sessão de 30 dias. Três perfis: síndico, morador e portaria.
 - **Condomínio e convites:** o síndico cadastra o prédio e manda o link no WhatsApp. O morador escolhe a unidade, ou o funcionário entra como portaria, e o síndico aprova.
 - **Cadastro:** moradores por unidade, veículos e contatos de emergência, com busca.

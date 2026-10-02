@@ -359,6 +359,8 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
 .linha { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
 .linha > .campo { min-width: 120px; }
 .grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr)); gap: 16px; align-items: start; }
+/* No Início, poucos blocos ocupam a largura toda em vez de deixar colunas vazias */
+.grade.sem-sobras { grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); }
 .colunas { display: flex; flex-direction: column; gap: 20px; }
 .colunas > * { min-width: 0; }
 
@@ -783,10 +785,11 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .hero-chips a:hover { background: rgb(255 255 255 / 20%); }
 .hero-chips svg { width: 15px; height: 15px; }
 
+/* Grade de módulos: 4 por linha (o Início completa a última linha com atalhos, sem deixar buraco) */
 .atalhos {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px 4px;
   padding: 18px 8px 16px;
   border-radius: var(--raio-l);
   background: var(--superficie);
@@ -809,30 +812,27 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 }
 .atalho .tile { width: 52px; height: 52px; border-radius: 16px; transition: transform 0.2s var(--mola); }
 .atalho .tile svg { width: 23px; height: 23px; }
+/* Selo de pendência no canto do ícone */
+.atalho .tile { position: relative; }
+.atalho .selo {
+  position: absolute;
+  top: -7px;
+  right: -9px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  border: 2px solid var(--superficie);
+  background: var(--terracota);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
 .atalho:hover .tile { transform: translateY(-2px); }
 .atalho:active .tile { transform: scale(0.92); }
 
-.resumo-numeros { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; padding: 12px 6px; }
-.numero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 6px 2px;
-  border-radius: 14px;
-  color: var(--texto);
-  text-align: center;
-  transition: background 0.15s;
-  -webkit-user-select: none;
-  user-select: none;
-}
-.numero:hover { background: var(--superficie-2); }
-.numero .tile { width: 30px; height: 30px; border-radius: 9px; margin-bottom: 5px; }
-.numero .tile svg { width: 16px; height: 16px; }
-.numero .valor { font-family: var(--fonte-titulo); font-size: 1.5rem; font-weight: 600; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: lining-nums tabular-nums; }
-.numero .rotulo { color: var(--texto-2); font-size: 0.6875rem; font-weight: 550; line-height: 1.25; }
-.numero.zero .valor { color: var(--texto-3); }
-.numero.zero .tile { opacity: 0.4; }
 
 /* --- Avisos -------------------------------------------------------------- */
 
@@ -1173,7 +1173,7 @@ details .acoes, details ul { margin-top: 6px; }
 
 /* --- Retorno de toque e carregamento ------------------------------------- */
 
-.atalho:active, .numero:active, a.cartao:active { transform: scale(0.98); }
+.atalho:active, a.cartao:active { transform: scale(0.98); }
 a.cartao { transition: transform 0.18s var(--mola), box-shadow 0.18s; }
 @media (hover: hover) {
   a.cartao:hover { transform: translateY(-2px); box-shadow: var(--sombra-2), 0 14px 28px -16px rgb(15 28 34 / 28%); }
@@ -1301,9 +1301,6 @@ a.cartao { transition: transform 0.18s var(--mola), box-shadow 0.18s; }
   .pagina { gap: 28px; }
   h1 { font-size: 2.5rem; }
 
-  .resumo-numeros { padding: 16px 10px; }
-  .numero .valor { font-size: 1.875rem; }
-  .numero .rotulo { font-size: 0.8125rem; }
   .atalhos { padding: 20px 12px; }
   .atalho { flex-direction: row; justify-content: center; gap: 12px; font-size: 0.9375rem; }
   .atalho .tile { width: 44px; height: 44px; border-radius: 12px; }

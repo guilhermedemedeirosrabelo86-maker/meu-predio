@@ -6,24 +6,26 @@ import { sairDaConta } from './perfil.js';
 export function telaMenu() {
   const membro = estado.membro;
   const papel = membro.papel;
+  // Mesmos nomes, ícones e ordem da grade do Início (o Início em si já está na barra de baixo).
+  const sindico = papel === 'sindico';
   const modulos = [
     // [rota, ícone, cor, título, descrição]
-    papel !== 'portaria' && ['inicio', 'inicio', 'unidade', 'Início', 'Resumo do condomínio'],
     ['avisos', 'avisos', 'avisos', 'Avisos', 'Comunicados do síndico'],
+    sindico && ['contas', 'contas', 'contas', 'Contas', 'Prestação de contas: entradas, saídas e saldo'],
+    sindico && ['moradores', 'moradores', 'moradores', 'Moradores', 'Convites, unidades e cadastro'],
     ['reservas', 'reservas', 'reservas', 'Reservas', 'Salão, churrasqueira e outras áreas'],
+    sindico && ['reservas/areas', 'editar', 'reservas', 'Áreas comuns', 'Regras e aprovação das reservas'],
+    papel !== 'portaria' && ['visitas', 'visitas', 'visitas', 'Visitas', 'Libere a entrada por QR Code'],
     ['ocorrencias', 'ocorrencias', 'ocorrencias', 'Ocorrências', 'Barulho, vazamento, garagem…'],
-    papel !== 'portaria' && ['visitas', 'visitas', 'visitas', 'Visitantes', 'Libere a entrada por QR Code'],
     papel !== 'morador' && ['portaria', 'portaria', 'portaria', 'Portaria', 'Validar visitantes e registrar entradas'],
-    papel !== 'portaria' && ['contas', 'contas', 'contas', 'Prestação de contas', 'Entradas, saídas e saldo em caixa'],
-    papel === 'sindico' && ['contas/taxas', 'unidade', 'contas', 'Taxa condominial', 'Quem já pagou em cada mês'],
-    papel === 'morador' && membro.unidade_id && ['contas/taxas', 'unidade', 'contas', 'Minha taxa', 'Situação da taxa da sua unidade'],
-    papel === 'sindico' && ['moradores', 'moradores', 'moradores', 'Moradores', 'Convites, unidades e cadastro'],
-    papel === 'sindico' && ['reservas/areas', 'editar', 'reservas', 'Áreas comuns', 'Regras e aprovação das reservas'],
+    sindico && ['contas/taxas', 'recibo', 'contas', 'Taxas', 'Quem já pagou a taxa em cada mês'],
+    papel === 'morador' && ['contas', 'contas', 'contas', 'Contas', 'Prestação de contas: entradas, saídas e saldo'],
+    papel === 'morador' && membro.unidade_id && ['contas/taxas', 'recibo', 'contas', 'Minha taxa', 'Situação da taxa da sua unidade'],
     membro.unidade_id && ['unidade', 'carro', 'unidade', 'Minha unidade', 'Veículos cadastrados'],
   ].filter(Boolean);
 
   return h('div', { class: 'pagina estreita' },
-    cabecalho('Menu'),
+    cabecalho('Mais'),
     h('a', { class: 'cartao', href: '#/perfil' },
       h('div', { class: 'perfil-topo' },
         avatar(estado.usuario.nome, 'grande'),
