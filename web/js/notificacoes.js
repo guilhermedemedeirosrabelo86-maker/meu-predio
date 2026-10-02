@@ -32,7 +32,7 @@ async function verificar() {
   if (!cid) return;
   let resumo;
   try {
-    resumo = await get(`/api/condominios/${cid}/avisos/resumo`);
+    resumo = await get(`/api/condominios/${cid}/avisos/resumo`, { fresco: true });
   } catch {
     return;
   }

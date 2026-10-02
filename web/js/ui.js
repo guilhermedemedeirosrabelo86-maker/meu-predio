@@ -431,9 +431,10 @@ export function maiusculas(entrada) {
   return entrada;
 }
 
-/** Anima um número de 0 até o valor final. */
+/** Anima um número de 0 até o valor final, só na primeira vez que a tela aparece (depois, mostra direto). */
+let jaContou = false;
 export function contar(el, alvo, duracao = 700) {
-  if (!alvo || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (!alvo || jaContou || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     el.textContent = alvo;
     return el;
   }
@@ -445,6 +446,7 @@ export function contar(el, alvo, duracao = 700) {
   };
   el.textContent = '0';
   requestAnimationFrame(passo);
+  setTimeout(() => { jaContou = true; }, 0); // os outros números desta mesma tela também animam
   return el;
 }
 

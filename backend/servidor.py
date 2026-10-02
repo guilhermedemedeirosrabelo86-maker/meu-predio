@@ -1,7 +1,9 @@
 """Servidor HTTP: entrega o app (pasta web/) e a API JSON (/api/...)."""
+import gzip
 import json
 import os
 import socket
+import sys
 import traceback
 from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -30,11 +32,17 @@ TIPOS = {
     ".woff2": "font/woff2",
     ".txt": "text/plain; charset=utf-8",
 }
+COMPACTAVEIS = {".html", ".js", ".css", ".json", ".webmanifest", ".svg", ".txt"}
+_compactados = {}  # (caminho, etag) -> conteúdo em gzip, para não compactar o mesmo arquivo toda vez
 CSP = "default-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
 
 
 class Manipulador(BaseHTTPRequestHandler):
     server_version = "MeuPredio/0.1"
+    # HTTP/1.1 mantém a conexão aberta entre os pedidos (keep-alive): no celular, pelo Wi-Fi,
+    # cada conexão nova custa uma ida e volta a mais. Conexões paradas fecham depois de 30 s.
+    protocol_version = "HTTP/1.1"
+    timeout = 30
 
     def do_GET(self):
         self._despachar("GET")
@@ -56,6 +64,8 @@ class Manipulador(BaseHTTPRequestHandler):
         elif metodo == "GET":
             self._estatico(caminho)
         else:
+            self._corpo_lido = False
+            self._descartar_corpo()
             self._responder_json(405, {"erro": "Método não permitido."})
 
     # --- API ------------------------------------------------------------------
@@ -63,6 +73,7 @@ class Manipulador(BaseHTTPRequestHandler):
     def _api(self, metodo, caminho, query):
         conn = db.conectar(self.server.caminho_db)
         cookies = []
+        self._corpo_lido = metodo not in ("POST", "PATCH")
         try:
             funcao, params = encontrar(metodo, caminho)
             corpo, bruto, tipo = self._ler_corpo() if metodo in ("POST", "PATCH") else ({}, None, "")
@@ -75,8 +86,10 @@ class Manipulador(BaseHTTPRequestHandler):
         except ErroHTTP as erro:
             conn.rollback()
             status, dados = erro.status, {"erro": erro.mensagem}
+            self._descartar_corpo()
         except Exception:
             conn.rollback()
+            self._descartar_corpo()
             self.log_error("Erro inesperado em %s %s\n%s", metodo, caminho, traceback.format_exc())
             status, dados = 500, {"erro": "Erro interno. Tente novamente."}
         finally:
@@ -85,6 +98,32 @@ class Manipulador(BaseHTTPRequestHandler):
             self._responder_arquivo(dados)
         else:
             self._responder_json(status, dados, cookies)
+
+    def log_message(self, formato, *args):
+        super().log_message(formato, *args)
+        registro = getattr(self.server, "registro_acessos", None)
+        if registro is not None:
+            # Para diagnóstico: quem pede a página inicial também diz qual navegador é.
+            navegador = f' "{self.headers.get("User-Agent", "")}"' if getattr(self, "path", "").split("?")[0] == "/" else ""
+            linha = f"{self.log_date_time_string()} {self.address_string()} {formato % args}{navegador}\n"
+            with registro["trava"]:
+                with open(registro["arquivo"], "a", encoding="utf-8") as arquivo:
+                    arquivo.write(linha)
+
+    def _descartar_corpo(self):
+        """Erro antes de ler o corpo do pedido: lê e joga fora, para a conexão servir ao próximo pedido.
+        Se o corpo for grande demais (ou inválido), fecha a conexão avisando o navegador."""
+        if self._corpo_lido:
+            return
+        self._corpo_lido = True
+        try:
+            tamanho = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            tamanho = -1
+        if 0 <= tamanho <= LIMITE_IMAGEM:
+            self.rfile.read(tamanho)
+        else:
+            self.close_connection = True
 
     def _responder_arquivo(self, arquivo):
         self.send_response(200)
@@ -106,13 +145,16 @@ class Manipulador(BaseHTTPRequestHandler):
         if tipo.startswith("image/"):
             if tamanho > LIMITE_IMAGEM:
                 raise ErroHTTP(413, "Foto grande demais (máximo 3 MB).")
+            self._corpo_lido = True
             return {}, self.rfile.read(tamanho), tipo
         if tamanho > LIMITE_CORPO:
             raise ErroHTTP(413, "Conteúdo grande demais.")
         if not tipo.startswith("application/json"):
             raise ErroHTTP(415, "Envie os dados em JSON.")
+        bruto = self.rfile.read(tamanho)
+        self._corpo_lido = True
         try:
-            corpo = json.loads(self.rfile.read(tamanho))
+            corpo = json.loads(bruto)
         except (ValueError, UnicodeDecodeError):
             raise ErroHTTP(400, "JSON inválido.")
         if not isinstance(corpo, dict):
@@ -141,6 +183,8 @@ class Manipulador(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(conteudo)))
         self.send_header("Cache-Control", "no-store")
+        if self.close_connection:
+            self.send_header("Connection", "close")
         for cookie in cookies:
             self.send_header("Set-Cookie", cookie)
         self._cabecalhos_seguranca()
@@ -159,11 +203,30 @@ class Manipulador(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(conteudo)
             return
+        # O navegador guarda o arquivo e pergunta se mudou (ETag); se não mudou, a resposta é vazia (304).
+        info = arquivo.stat()
+        etag = f'"{info.st_mtime_ns:x}-{info.st_size:x}"'
+        if self.headers.get("If-None-Match") == etag:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            return
         conteudo = arquivo.read_bytes()
+        compactar = arquivo.suffix in COMPACTAVEIS and "gzip" in (self.headers.get("Accept-Encoding") or "")
+        if compactar:
+            chave = (arquivo, etag)
+            if chave not in _compactados:
+                _compactados[chave] = gzip.compress(conteudo, compresslevel=6)
+            conteudo = _compactados[chave]
         self.send_response(200)
         self.send_header("Content-Type", TIPOS.get(arquivo.suffix, "application/octet-stream"))
         self.send_header("Content-Length", str(len(conteudo)))
         self.send_header("Cache-Control", "no-cache")
+        self.send_header("ETag", etag)
+        self.send_header("Vary", "Accept-Encoding")
+        if compactar:
+            self.send_header("Content-Encoding", "gzip")
         self._cabecalhos_seguranca()
         self.end_headers()
         self.wfile.write(conteudo)
@@ -179,6 +242,12 @@ class Servidor(ThreadingHTTPServer):
     # No Windows, SO_REUSEADDR deixa dois servidores na mesma porta (cada pedido cai num deles).
     # Lá pedimos a porta com exclusividade; se estiver ocupada, a abertura falha e rodar.py tenta outra.
     allow_reuse_address = os.name != "nt"
+
+    def handle_error(self, request, client_address):
+        # Com keep-alive, o navegador fecha conexões que não vai mais usar: isso não é erro.
+        if issubclass(sys.exc_info()[0] or type(None), (ConnectionError, TimeoutError)):
+            return
+        super().handle_error(request, client_address)
 
     def server_bind(self):
         if os.name == "nt":

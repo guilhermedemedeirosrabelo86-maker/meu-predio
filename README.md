@@ -1,9 +1,11 @@
 # Meu Prédio
 
 App para condomínios pequenos (8 a 40 unidades) geridos por síndico morador.
-É um web app instalável no celular (PWA), com menu lateral e layout em colunas no computador, e tema claro/escuro automático. A identidade visual usa verde-garrafa, areia e terracota, com títulos serifados.
+É um web app instalável no celular (PWA), com menu lateral e layout em colunas no computador, e tema claro/escuro automático. A identidade visual usa azul-petróleo e pêssego, com títulos serifados e ícones em quadradinhos de fundo suave.
 
-A experiência foi pensada para parecer um app nativo: transições entre telas que indicam avançar e voltar, a rolagem é restaurada ao voltar, o título grande sobe para a barra ao rolar, puxar para atualizar, deslizar no calendário e nas fotos, botões com spinner e vibração leve no Android, máscaras de telefone e placa, e as fontes Inter e Fraunces embutidas (licenças em `web/fonts/`). Quem configura "reduzir movimento" no sistema recebe o app sem animações.
+A experiência foi pensada para parecer um app nativo: a troca de abas é instantânea, com um destaque que desliza na barra de baixo, a rolagem é restaurada ao voltar, o título grande sobe para a barra ao rolar, puxar para atualizar, deslizar no calendário e nas fotos, botões com spinner e vibração leve no Android, máscaras de telefone e placa, e as fontes Inter e Fraunces embutidas (licenças em `web/fonts/`). Quem configura "reduzir movimento" no sistema recebe o app sem animações.
+
+Para rodar liso no celular, as telas já visitadas abrem na hora com os últimos dados e se atualizam sozinhas em segundo plano, e os dados das abas principais são buscados assim que o Início aparece. Salvar qualquer coisa descarta esse cache. O servidor mantém a conexão aberta entre os pedidos, compacta os arquivos de texto e responde "não mudou" para os que o navegador já tem.
 
 - **Início:** painel com atalhos, pendências do síndico e um resumo de cada módulo.
 - **Conta e acesso:** cadastro, login e sessão de 30 dias. Três perfis: síndico, morador e portaria.
@@ -35,7 +37,7 @@ Ou dê dois cliques em `iniciar.bat`. O app abre em http://localhost:8000.
 Se o celular não carregar, o Firewall do Windows está bloqueando. Na primeira vez, o Windows pergunta se o Python pode acessar a rede: permita no tipo de rede em uso. Em computador da empresa, isso pode exigir o suporte de TI.
 Pelo IP, o navegador não libera instalação na tela inicial nem notificações, porque elas exigem HTTPS. Isso passa a funcionar quando o app for hospedado.
 
-O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos e comprovantes ficam em `dados/arquivos/`. Ao iniciar, o servidor atualiza sozinho bancos criados por versões anteriores.
+O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos e comprovantes ficam em `dados/arquivos/`. Cada execução do servidor registra os pedidos em `dados/acessos.log`, útil para investigar lentidão. Ao iniciar, o servidor atualiza sozinho bancos criados por versões anteriores.
 
 ## Testes
 
@@ -43,7 +45,7 @@ O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos e comprovant
 python -m unittest -v
 ```
 
-Os testes sobem o servidor numa porta livre e exercitam a API inteira: permissões, convites, avisos, veículos, reservas, ocorrências com fotos, visitas, portaria, prestação de contas e taxa condominial.
+Os testes sobem o servidor numa porta livre e exercitam a API inteira: permissões, convites, avisos, veículos, reservas, ocorrências com fotos, visitas, portaria, prestação de contas e taxa condominial. `test_servidor.py` confere a conexão reaproveitada, o cache dos arquivos e a compactação.
 
 O gerador de QR Code (`web/js/qrcode.js`) foi conferido contra a biblioteca Python `qrcode` (saída idêntica módulo a módulo nas 8 máscaras) e com o leitor zxing.
 

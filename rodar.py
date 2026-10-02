@@ -1,5 +1,6 @@
 """Inicia o Meu Prédio: python rodar.py [--host 0.0.0.0] [--porta 8000] [--abrir [pagina]]"""
 import argparse
+import threading
 import webbrowser
 from pathlib import Path
 
@@ -31,6 +32,10 @@ def main():
     Path(args.banco).parent.mkdir(parents=True, exist_ok=True)
     servidor = iniciar(args.host, args.porta, args.banco)
     porta = servidor.server_address[1]
+    # Registro dos pedidos desta execução (recomeça a cada vez), para investigar lentidão.
+    arquivo_log = Path(args.banco).parent / "acessos.log"
+    arquivo_log.write_text("", encoding="utf-8")
+    servidor.registro_acessos = {"arquivo": arquivo_log, "trava": threading.Lock()}
     print(f"\nMeu Prédio rodando em http://localhost:{porta}  (Ctrl+C ou feche esta janela para parar)")
     if args.host == "0.0.0.0":
         enderecos = [f"http://{ip}:{porta}" for ip in ips_locais()]

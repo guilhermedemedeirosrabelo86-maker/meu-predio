@@ -13,7 +13,9 @@ export async function telaAvisos() {
   // Abrir o mural conta como leitura (o síndico vê "lido por X de Y").
   // Os selos "Novo" continuam visíveis nesta visita.
   if (avisos.some((a) => !a.lido)) {
-    post(`/api/condominios/${cid}/avisos/lidos`).then(() => atualizarContador(0)).catch(() => {});
+    // Marcar como lido só muda os avisos e o resumo do Início: o resto do cache continua valendo.
+    post(`/api/condominios/${cid}/avisos/lidos`, {}, { invalida: /\/(avisos|painel)/ })
+      .then(() => atualizarContador(0)).catch(() => {});
   }
   const novos = avisos.filter((a) => !a.lido).length;
 

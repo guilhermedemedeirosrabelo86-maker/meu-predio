@@ -46,10 +46,10 @@
   --azul: #2c6e8f;    --azul-suave: #e1eef4;
 
   --sombra-1: 0 1px 2px rgb(15 28 34 / 6%);
-  --sombra-2: 0 1px 2px rgb(15 28 34 / 5%), 0 6px 18px -8px rgb(15 28 34 / 14%);
+  --sombra-2: 0 0 0 1px rgb(15 28 34 / 4%), 0 6px 20px -10px rgb(15 28 34 / 13%);
   --sombra-3: 0 24px 56px -20px rgb(15 28 34 / 40%);
   --raio: 14px;
-  --raio-l: 20px;
+  --raio-l: 22px;
   --nav-altura: 68px;
   --mola: cubic-bezier(0.2, 0.8, 0.2, 1);
   --fonte: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
@@ -84,7 +84,11 @@
   }
 }
 
-/* Cor sólida de cada módulo */
+@media (prefers-color-scheme: dark) {
+  .tile { color: color-mix(in srgb, var(--c, #7f8c93) 50%, #fff); background: color-mix(in srgb, var(--c, #7f8c93) 24%, var(--superficie)); }
+}
+
+/* Cor de cada módulo (o ícone usa a cor cheia; o fundo, uma versão suave) */
 .cor-avisos { --c: #c8572f; }
 .cor-reservas { --c: #2f7d5b; }
 .cor-ocorrencias { --c: #b23a2c; }
@@ -147,7 +151,6 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
 
 /* Barra superior: verde no celular, emendando com o topo da página */
 .barra-topo {
-  view-transition-name: topo;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -204,7 +207,6 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
 .barra-topo.com-titulo .seletor-condominio > svg.icone { opacity: 0; }
 
 .conteudo {
-  view-transition-name: conteudo;
   max-width: 720px;
   margin: 0 auto;
   padding: 0 16px 40px;
@@ -212,7 +214,6 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
 
 /* Navegação flutuante (celular) */
 .nav {
-  view-transition-name: nav;
   position: fixed;
   left: 12px;
   right: 12px;
@@ -223,14 +224,26 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
   height: var(--nav-altura);
   padding: 0 6px;
   border-radius: 22px;
-  background: rgb(15 28 34 / 96%);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgb(15 28 34); /* opaca e sem desfoque: desfocar o fundo a cada quadro pesa na rolagem do celular */
   box-shadow: 0 14px 34px -14px rgb(15 28 34 / 60%);
 }
 .nav .marca, .nav .nav-perfil { display: none; }
+/* Destaque da aba aberta: uma pílula que desliza de uma aba para a outra (posição definida no app.js) */
+.nav-indicador {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 11px;
+  background: var(--areia);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.42s cubic-bezier(0.32, 0.72, 0, 1), width 0.42s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s;
+}
+.nav-indicador.visivel { opacity: 1; }
+.nav-indicador.sem-transicao { transition: none; }
 .nav-item {
   position: relative;
+  z-index: 1;
   flex: 1;
   max-width: 110px;
   display: flex;
@@ -250,11 +263,11 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
   width: 46px;
   height: 30px;
   border-radius: 10px;
-  transition: background 0.25s, color 0.25s, transform 0.15s;
+  transition: background 0.25s, color 0.2s 0.12s, transform 0.15s; /* a cor troca quando o destaque chega */
 }
 .nav-icone svg { width: 21px; height: 21px; }
 .nav-item[aria-current="page"] { color: #fff; }
-.nav-item[aria-current="page"] .nav-icone { background: var(--areia); color: var(--marca); }
+.nav-item[aria-current="page"] .nav-icone { color: var(--marca); }
 .nav-item:active .nav-icone { transform: scale(0.9); }
 .nav-contador {
   position: absolute;
@@ -408,15 +421,16 @@ a.item:active, button.item:active { background: var(--superficie-3); }
 .item-fim { display: flex; align-items: center; gap: 6px; flex-shrink: 0; color: var(--texto-3); }
 .item-fim .seta { width: 18px; height: 18px; }
 
+/* Quadradinho do ícone: fundo suave tingido com a cor do módulo e ícone na cor cheia */
 .tile {
   width: 42px;
   height: 42px;
-  border-radius: 12px;
+  border-radius: 13px;
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  color: #fff;
-  background: var(--c, #8a8376);
+  color: var(--c, #7f8c93);
+  background: color-mix(in srgb, var(--c, #7f8c93) 13%, var(--superficie));
 }
 .tile svg { width: 20px; height: 20px; }
 .tile.grande { width: 58px; height: 58px; border-radius: 16px; }
@@ -1183,30 +1197,11 @@ a.cartao { transition: transform 0.18s var(--mola), box-shadow 0.18s; }
 .botao.tonal { --cor-spinner: var(--primaria); }
 @keyframes girar { to { transform: rotate(360deg); } }
 
-/* --- Transições entre telas ---------------------------------------------- */
+/* --- Animações de apoio --------------------------------------------------- */
 
-::view-transition-old(conteudo) { animation: 0.16s ease-in both vt-sair-esquerda; }
-::view-transition-new(conteudo) { animation: 0.32s var(--mola) both vt-entrar-direita; }
-html[data-direcao="voltar"]::view-transition-old(conteudo) { animation-name: vt-sair-direita; }
-html[data-direcao="voltar"]::view-transition-new(conteudo) { animation-name: vt-entrar-esquerda; }
-html[data-direcao="lado"]::view-transition-old(conteudo) { animation: 0.12s ease-in both vt-sumir; }
-html[data-direcao="lado"]::view-transition-new(conteudo) { animation: 0.28s var(--mola) both vt-subir; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.2s; }
-@keyframes vt-sair-esquerda { to { opacity: 0; transform: translateX(-28px); } }
-@keyframes vt-sair-direita { to { opacity: 0; transform: translateX(28px); } }
 @keyframes vt-entrar-direita { from { opacity: 0; transform: translateX(36px); } }
 @keyframes vt-entrar-esquerda { from { opacity: 0; transform: translateX(-36px); } }
 @keyframes vt-sumir { to { opacity: 0; } }
-@keyframes vt-subir { from { opacity: 0; transform: translateY(10px) scale(0.99); } }
-
-/* Sem View Transitions: entrada em cascata dos blocos da página */
-.conteudo.cascata > .pagina > * { animation: cascata 0.42s var(--mola) both; }
-.conteudo.cascata > .pagina > :nth-child(2) { animation-delay: 0.05s; }
-.conteudo.cascata > .pagina > :nth-child(3) { animation-delay: 0.1s; }
-.conteudo.cascata > .pagina > :nth-child(4) { animation-delay: 0.14s; }
-.conteudo.cascata > .pagina > :nth-child(5) { animation-delay: 0.18s; }
-.conteudo.cascata > .pagina > :nth-child(n+6) { animation-delay: 0.22s; }
-.conteudo.cascata > .pagina > .topo-pagina { animation: none; }
 @keyframes cascata { from { opacity: 0; transform: translateY(14px); } }
 
 /* ==========================================================================
@@ -1228,7 +1223,6 @@ html[data-direcao="lado"]::view-transition-new(conteudo) { animation: 0.28s var(
     padding: 20px 14px;
     border-radius: 0;
     background: var(--marca);
-    backdrop-filter: none;
     box-shadow: none;
   }
   .nav .marca { display: flex; align-items: center; gap: 12px; padding: 4px 8px 24px; font-family: var(--fonte-titulo); font-weight: 600; font-size: 1.375rem; letter-spacing: -0.01em; color: #fff; }
@@ -1248,6 +1242,8 @@ html[data-direcao="lado"]::view-transition-new(conteudo) { animation: 0.28s var(
   .nav-item:hover { background: rgb(255 255 255 / 7%); color: #fff; }
   .nav-item[aria-current="page"] { background: rgb(255 255 255 / 10%); color: #fff; font-weight: 650; }
   .nav-icone { width: 32px; height: 32px; border-radius: 9px; }
+  .nav-indicador { display: none; }
+  .nav-item[aria-current="page"] .nav-icone { background: var(--areia); }
   .nav-contador { position: static; margin-left: auto; border: 0; }
   .nav .nav-perfil {
     display: flex;

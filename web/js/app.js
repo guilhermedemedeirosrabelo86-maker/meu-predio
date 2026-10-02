@@ -1,4 +1,6 @@
-import { ErroApi } from './api.js';
+import {
+  ErroApi, limparCache, preCarregar, quandoMudar, rastrearLeituras,
+} from './api.js';
 import {
   carregarUsuario, definirRenderizador, escolherCondominio, estado, lerLocal, limparSessao,
 } from './estado.js';
@@ -150,6 +152,7 @@ function redirecionamento(achado, caminho) {
 // com uma transição que indica a direção (avançar, voltar ou trocar de aba).
 
 let moldura = null; // { chave, el, main, nav }
+let leiturasDaTela = new Set(); // dados que a tela atual usou (para redesenhar se mudarem)
 let caminhoAnterior = null;
 let origemSeletor = null; // tela de onde o seletor de condomínio foi aberto, para fechá-lo no segundo toque
 const rolagens = new Map(); // posição de rolagem de cada tela, para restaurar ao voltar
@@ -198,11 +201,13 @@ async function renderizar({ manterRolagem = false } = {}) {
   const rolagemAtual = window.scrollY;
 
   // Se a tela demorar, mostra o esqueleto em vez de deixar a anterior parada.
+  // Com os dados em cache a tela vem na hora e o esqueleto nem aparece.
   const espera = manterRolagem ? null : setTimeout(() => {
-    if (minhaGeracao === geracao && comMoldura) montarNaMoldura(esqueleto(), rota, false);
-  }, 160);
+    if (minhaGeracao === geracao && comMoldura) montarNaMoldura(esqueleto(), rota);
+  }, 250);
 
   let conteudo;
+  const leituras = rastrearLeituras();
   try {
     conteudo = await rota.tela(params);
   } catch (e) {
@@ -217,33 +222,62 @@ async function renderizar({ manterRolagem = false } = {}) {
   }
   clearTimeout(espera);
   if (minhaGeracao !== geracao) return; // o usuário já navegou para outra tela
+  leiturasDaTela = leituras;
 
-  const aplicar = (animarCascata) => {
-    if (comMoldura) {
-      montarNaMoldura(conteudo, rota, animarCascata);
-    } else {
-      moldura = null;
-      raiz.replaceChildren(conteudo);
-    }
+  if (comMoldura) {
     const alvo = manterRolagem ? rolagemAtual : direcao === 'voltar' ? rolagens.get(caminho) || 0 : 0;
+    montarNaMoldura(conteudo, rota);
     window.scrollTo(0, alvo);
-    observarTitulo();
-    atualizarBarraTopo();
-    fecharAbertura(document.querySelector('.abertura'));
-  };
-
-  const mesmaMoldura = comMoldura && moldura?.el.isConnected && moldura.chave === chaveMoldura();
-  if (direcao && mesmaMoldura && document.startViewTransition && !reduzirMovimento()) {
-    document.documentElement.dataset.direcao = direcao;
-    const transicao = document.startViewTransition(() => aplicar(false));
-    transicao.finished.finally(() => delete document.documentElement.dataset.direcao);
   } else {
-    aplicar(!manterRolagem && !reduzirMovimento());
+    moldura = null;
+    raiz.replaceChildren(conteudo);
+    window.scrollTo(0, 0);
   }
+  observarTitulo();
+  atualizarBarraTopo();
+  fecharAbertura(document.querySelector('.abertura'));
+  if (comMoldura) agendarPreCarga();
   caminhoAnterior = caminho;
 }
 
-function montarNaMoldura(conteudo, rota, animarCascata) {
+/** Dados mudaram no servidor: redesenha a tela atual sem animação, se a pessoa não estiver no meio de algo. */
+let redesenhoPendente = null;
+quandoMudar((caminho) => {
+  if (!leiturasDaTela.has(caminho)) return;
+  clearTimeout(redesenhoPendente);
+  redesenhoPendente = setTimeout(() => {
+    const ocupada = document.querySelector('dialog[open], .conteudo form')
+      || document.activeElement?.matches('input, textarea, select');
+    if (!ocupada) renderizar({ manterRolagem: true });
+  }, 60);
+});
+
+/** Depois que a primeira tela aparece, busca em segundo plano os dados das abas principais. */
+let preCarregado = null;
+function agendarPreCarga() {
+  const membro = estado.membro;
+  if (!membro || preCarregado === membro.membro_id) return;
+  preCarregado = membro.membro_id;
+  const base = `/api/condominios/${membro.condominio_id}`;
+  const morador = membro.papel !== 'portaria';
+  const caminhos = [
+    `${base}/avisos`, `${base}/areas`, `${base}/reservas/proximas`, `${base}/ocorrencias`,
+    morador && `${base}/painel`, morador && `${base}/visitas`, morador && `${base}/contas`,
+    membro.papel === 'sindico' && `${base}/taxas`, membro.papel === 'sindico' && `${base}/cadastro`,
+    membro.papel === 'sindico' && base,
+    membro.papel === 'morador' && membro.unidade_id && `${base}/taxas/minha`,
+    membro.unidade_id && `${base}/veiculos`,
+  ].filter(Boolean);
+  const quandoOcioso = window.requestIdleCallback || ((f) => setTimeout(f, 300));
+  quandoOcioso(async () => {
+    const [, areas] = await preCarregar(caminhos);
+    // O calendário de Reservas abre na primeira área, no mês atual.
+    if (areas?.areas.length) preCarregar([`${base}/reservas?area_id=${areas.areas[0].id}&mes=${areas.hoje.slice(0, 7)}`]);
+  });
+}
+
+/** Troca o conteúdo dentro da moldura (cabeçalho e navegação continuam os mesmos). */
+function montarNaMoldura(conteudo, rota) {
   const chave = chaveMoldura();
   if (!moldura || moldura.chave !== chave || !moldura.el.isConnected) {
     moldura = criarMoldura(chave);
@@ -253,19 +287,41 @@ function montarNaMoldura(conteudo, rota, animarCascata) {
     if (link.dataset.aba === rota.aba) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
+  posicionarIndicador();
   moldura.el.querySelector('.seletor-condominio')?.classList.toggle('aberto', rota.padrao === 'condominios');
-  moldura.main.classList.remove('cascata');
   moldura.main.replaceChildren(conteudo);
-  if (animarCascata) {
-    void moldura.main.offsetWidth; // reinicia a animação
-    moldura.main.classList.add('cascata');
+}
+
+/** Celular: o destaque colorido da barra de baixo desliza até a aba aberta. */
+function posicionarIndicador() {
+  const indicador = moldura?.nav?.querySelector('.nav-indicador');
+  if (!indicador) return;
+  const ativo = moldura.nav.querySelector('.nav-item[aria-current="page"] .nav-icone');
+  if (!ativo?.offsetParent || getComputedStyle(indicador).display === 'none') {
+    indicador.classList.remove('visivel');
+    return;
+  }
+  const base = moldura.nav.getBoundingClientRect();
+  const alvo = ativo.getBoundingClientRect();
+  Object.assign(indicador.style, {
+    width: `${alvo.width}px`,
+    height: `${alvo.height}px`,
+    transform: `translate(${alvo.left - base.left}px, ${alvo.top - base.top}px)`,
+  });
+  if (!indicador.classList.contains('visivel')) {
+    // Primeira vez (ou depois de sumir): aparece direto no lugar, sem deslizar de longe.
+    indicador.classList.add('sem-transicao', 'visivel');
+    void indicador.offsetWidth;
+    indicador.classList.remove('sem-transicao');
   }
 }
+window.addEventListener('resize', posicionarIndicador);
 
 function criarMoldura(chave) {
   const membro = estado.membro;
   const itens = membro ? NAVEGACAO[membro.papel].filter((i) => i.id !== 'unidade' || membro.unidade_id) : [];
   const nav = itens.length > 0 ? h('nav', { class: 'nav', 'aria-label': 'Navegação principal' },
+    h('span', { class: 'nav-indicador', 'aria-hidden': 'true' }),
     h('div', { class: 'marca' }, h('span', { class: 'logo' }, icone('predio')), 'Meu Prédio'),
     itens.map((item) => h('a', {
       class: `nav-item${item.celular === false ? ' so-computador' : ''}${item.computador === false ? ' so-celular' : ''}`,
@@ -392,6 +448,7 @@ function instalarPuxarParaAtualizar() {
     indicador.classList.add('solto', 'atualizando');
     indicador.style.transform = 'translateY(14px)';
     try {
+      limparCache(); // puxar para atualizar sempre busca tudo de novo
       await carregarUsuario().catch(() => {});
       await renderizar({ manterRolagem: true });
     } finally {

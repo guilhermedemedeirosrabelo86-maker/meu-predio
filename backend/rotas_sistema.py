@@ -31,3 +31,4 @@ def rede(req):
         "porta": porta,
         "enderecos": [f"http://{ip}:{porta}" for ip in ips_locais()],
     }
+
