@@ -190,6 +190,59 @@ CREATE TABLE IF NOT EXISTS pagamentos (
     UNIQUE (unidade_id, mes)
 );
 
+-- Pacote que chegou na portaria para uma unidade. retirada_em vazio = ainda está na portaria.
+CREATE TABLE IF NOT EXISTS encomendas (
+    id              INTEGER PRIMARY KEY,
+    condominio_id   INTEGER NOT NULL REFERENCES condominios(id) ON DELETE CASCADE,
+    unidade_id      INTEGER NOT NULL REFERENCES unidades(id) ON DELETE CASCADE,
+    descricao       TEXT NOT NULL,
+    registrado_por  INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    criado_em       TEXT NOT NULL DEFAULT (datetime('now')),
+    retirada_em     TEXT,
+    retirada_por    TEXT NOT NULL DEFAULT '',
+    entregue_por    INTEGER REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+-- Contatos úteis do prédio (zelador, encanador, administradora...), mantidos pelo síndico.
+CREATE TABLE IF NOT EXISTS telefones (
+    id              INTEGER PRIMARY KEY,
+    condominio_id   INTEGER NOT NULL REFERENCES condominios(id) ON DELETE CASCADE,
+    nome            TEXT NOT NULL,
+    descricao       TEXT NOT NULL DEFAULT '',
+    telefone        TEXT NOT NULL
+);
+
+-- Enquete do síndico: cada unidade vota uma vez (e pode mudar o voto enquanto estiver aberta).
+CREATE TABLE IF NOT EXISTS enquetes (
+    id              INTEGER PRIMARY KEY,
+    condominio_id   INTEGER NOT NULL REFERENCES condominios(id) ON DELETE CASCADE,
+    autor_id        INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    pergunta        TEXT NOT NULL,
+    descricao       TEXT NOT NULL DEFAULT '',
+    encerra_em      TEXT,
+    encerrada       INTEGER NOT NULL DEFAULT 0,
+    criado_em       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS enquete_opcoes (
+    id          INTEGER PRIMARY KEY,
+    enquete_id  INTEGER NOT NULL REFERENCES enquetes(id) ON DELETE CASCADE,
+    texto       TEXT NOT NULL,
+    ordem       INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS enquete_votos (
+    enquete_id  INTEGER NOT NULL REFERENCES enquetes(id) ON DELETE CASCADE,
+    unidade_id  INTEGER NOT NULL REFERENCES unidades(id) ON DELETE CASCADE,
+    opcao_id    INTEGER NOT NULL REFERENCES enquete_opcoes(id) ON DELETE CASCADE,
+    usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    criado_em   TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (enquete_id, unidade_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_encomendas_condominio ON encomendas (condominio_id, retirada_em);
+CREATE INDEX IF NOT EXISTS idx_encomendas_unidade ON encomendas (unidade_id, retirada_em);
+CREATE INDEX IF NOT EXISTS idx_enquetes_condominio ON enquetes (condominio_id, encerrada);
 CREATE INDEX IF NOT EXISTS idx_ocorrencias_condominio ON ocorrencias (condominio_id, status);
 CREATE INDEX IF NOT EXISTS idx_visitas_condominio ON visitas (condominio_id, data_inicio, data_fim);
 CREATE INDEX IF NOT EXISTS idx_visitas_unidade ON visitas (unidade_id);

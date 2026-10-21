@@ -85,7 +85,8 @@ class TesteTaxas(BaseApi):
                          [("2026-10", "paga"), ("2026-09", "atrasada"), ("2026-08", "atrasada")])
 
         painel = morador.get(f"/api/condominios/{cid}/painel")[1]
-        self.assertEqual(painel["taxa"], {"mes": "2026-10", "situacao": "paga", "meses_atrasados": 2, "vencimento": 10})
+        self.assertEqual(painel["taxa"], {"mes": "2026-10", "situacao": "paga", "meses_atrasados": 2, "vencimento": 10,
+                                          "valor_centavos": 35_000})
         self.assertEqual(sindico.get(f"/api/condominios/{cid}/painel")[1]["pendencias"]["taxas_atrasadas"], 3)
 
         self.pagar(sindico, cid, unidades["102"], "2026-09")

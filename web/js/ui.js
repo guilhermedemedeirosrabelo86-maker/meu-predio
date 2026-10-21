@@ -30,7 +30,7 @@ const ICONES = {
   unidade: ['M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16', 'M16 9h2a2 2 0 0 1 2 2v10', 'M2 21h20', 'M8 7h4', 'M8 11h4', 'M8 15h4'],
   carro: ['M5 17h14v-5l-2-5H7l-2 5z', 'M5 12h14', 'M7 17v2', 'M17 17v2', 'M7.5 14.5h.01', 'M16.5 14.5h.01'],
   perfil: ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0'],
-  menu: ['M4 4h6v6H4z', 'M14 4h6v6h-6z', 'M4 14h6v6H4z', 'M14 14h6v6h-6z'],
+  menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
   seta: ['m9 18 6-6-6-6'],
   voltar: ['m15 18-6-6 6-6'],
   abaixo: ['m6 9 6 6 6-6'],
@@ -75,6 +75,10 @@ const ICONES = {
   recibo: ['M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z', 'M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8', 'M12 17.5v-11'],
   entrada: ['M17 7 7 17', 'M17 17H7V7'],
   saida: ['M7 7h10v10', 'M7 17 17 7'],
+  pacote: ['M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z', 'M12 22V12', 'm3.3 7 8.7 5 8.7-5', 'm7.5 4.27 9 5.15'],
+  enquetes: ['M3 3v16a2 2 0 0 0 2 2h16', 'M7 16h8', 'M7 11h12', 'M7 6h3'],
+  telefones: ['M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z'],
+  whatsapp: ['M7.9 20A9 9 0 1 0 4 16.1L2 22z'],
   atualizar: ['M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8', 'M3 3v5h5', 'M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16', 'M16 16h5v5'],
 };
 
@@ -100,16 +104,21 @@ export function icone(nome, classe = 'icone') {
 /** Quadrado arredondado colorido com ícone (cor = nome do módulo). */
 export const tile = (nome, cor = nome, extra = '') => h('span', { class: `tile cor-${cor} ${extra}`.trim() }, icone(nome));
 
-const CORES_AVATAR = ['#0f4c5c', '#2f7d5b', '#c8572f', '#b23a2c', '#2c6e8f', '#7a4e7e', '#b07f22', '#3f6b6a', '#8c5a3c', '#5e584e'];
-
 export function avatar(nome, tamanho = '') {
   const partes = (nome || '?').trim().split(/\s+/);
   const iniciais = (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : '')).toUpperCase();
-  let soma = 0;
-  for (const c of nome || '') soma = (soma * 31 + c.charCodeAt(0)) >>> 0;
-  const el = h('span', { class: `avatar ${tamanho}`.trim(), 'aria-hidden': 'true' }, iniciais);
-  el.style.background = CORES_AVATAR[soma % CORES_AVATAR.length];
-  return el;
+  return h('span', { class: `avatar ${tamanho}`.trim(), 'aria-hidden': 'true' }, iniciais);
+}
+
+/** Plaquinha amarela com o número da unidade (ou um ícone, para quem não mora no prédio). */
+export const placa = (unidade, rotulo = unidade && `Unidade ${unidade}`) => h('span', {
+  class: 'placa-unidade', role: rotulo ? 'img' : null, 'aria-label': rotulo || null, 'aria-hidden': rotulo ? null : 'true',
+}, unidade || icone('predio'));
+
+/** Celular brasileiro (11 dígitos com DDD) vira link do WhatsApp. */
+export function linkWhatsapp(telefone) {
+  const digitos = telefone.replace(/\D/g, '').replace(/^55(?=\d{11}$)/, '');
+  return digitos.length === 11 && digitos[2] === '9' ? `https://wa.me/55${digitos}` : null;
 }
 
 export const pill = (texto, cor = '', extra = '') => h('span', { class: `pill ${cor} ${extra}`.trim() }, texto);

@@ -21,6 +21,9 @@ export function telaMenu() {
     sindico && ['contas/taxas', 'recibo', 'contas', 'Taxas', 'Quem já pagou a taxa em cada mês'],
     papel === 'morador' && ['contas', 'contas', 'contas', 'Contas', 'Prestação de contas: entradas, saídas e saldo'],
     papel === 'morador' && membro.unidade_id && ['contas/taxas', 'recibo', 'contas', 'Minha taxa', 'Situação da taxa da sua unidade'],
+    ['encomendas', 'pacote', 'neutra', 'Encomendas', papel === 'morador' ? 'O que chegou para você na portaria' : 'Registrar chegada e entrega de pacotes'],
+    papel !== 'portaria' && ['enquetes', 'enquetes', 'neutra', 'Enquetes', sindico ? 'Pergunte e veja o resultado da votação' : 'Vote nas decisões do condomínio'],
+    ['telefones', 'telefones', 'neutra', 'Telefones úteis', 'Zelador, prestadores e serviços'],
     membro.unidade_id && ['unidade', 'carro', 'unidade', 'Minha unidade', 'Veículos cadastrados'],
   ].filter(Boolean);
 

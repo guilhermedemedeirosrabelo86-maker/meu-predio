@@ -2,7 +2,7 @@ import { del, get, patch, post } from '../api.js';
 import { carregarUsuario, estado, recarregar } from '../estado.js';
 import {
   aoEnviar, avatar, cabecalho, comErro, confirmar, copiar, erroForm, formatarPlaca, h, icone, linkTelefone,
-  pill, secao, toast,
+  pill, placa, secao, toast,
 } from '../ui.js';
 
 /** Painel do síndico: convite, pedidos pendentes, equipe e cadastro de unidades. */
@@ -100,8 +100,7 @@ function cartaoUnidade(cid, unidade) {
   });
   return h('article', { class: 'cartao compacto' },
     h('div', { class: 'unidade-cabecalho' },
-      h('span', { class: 'tile cor-unidade' }, icone('unidade')),
-      h('h3', {}, unidade.identificador),
+      h('h3', {}, placa(unidade.identificador)),
       vazia
         ? pill('Ninguém no app', '', 'sem-ponto')
         : pill(unidade.moradores.length === 1 ? '1 morador' : `${unidade.moradores.length} moradores`, 'verde')),

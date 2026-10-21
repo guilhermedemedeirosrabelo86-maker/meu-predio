@@ -1,5 +1,6 @@
 """Resumo para a tela inicial: um número por módulo, numa única chamada."""
 from .comum import exigir_membro, hoje
+from .rotas_enquetes import sem_voto
 from .rotas_taxas import situacao_da_unidade, unidades_atrasadas
 from .web import rota
 
@@ -29,6 +30,8 @@ def painel(req, cid):
         "visitas_hoje": 0,
         "ocorrencias_abertas": 0,
         "taxa": None,
+        "encomendas": 0,
+        "enquetes_sem_voto": 0,
     }
     if unidade is not None:
         proxima = um(
@@ -42,8 +45,24 @@ def painel(req, cid):
                AND data_inicio <= ? AND data_fim >= ?""",
             unidade, dia, dia,
         )[0]
+        resposta["encomendas"] = um(
+            "SELECT COUNT(*) FROM encomendas WHERE unidade_id = ? AND retirada_em IS NULL", unidade
+        )[0]
         if membro["papel"] in ("sindico", "morador"):
+            resposta["enquetes_sem_voto"] = sem_voto(conn, cid, unidade, dia)
             resposta["taxa"] = situacao_da_unidade(conn, cid, unidade, hoje())
+
+    if membro["papel"] in ("sindico", "morador"):
+        # Caixa do condomínio e o movimento do mês, os mesmos números da prestação de contas.
+        mes = dia[:7]
+        caixa = um(
+            """SELECT COALESCE(SUM(CASE WHEN tipo = 'receita' THEN valor_centavos ELSE -valor_centavos END), 0) AS saldo,
+                      COALESCE(SUM(CASE WHEN tipo = 'receita' AND data LIKE ? THEN valor_centavos END), 0) AS entradas,
+                      COALESCE(SUM(CASE WHEN tipo = 'despesa' AND data LIKE ? THEN valor_centavos END), 0) AS saidas
+               FROM lancamentos WHERE condominio_id = ? AND data <= ?""",
+            f"{mes}-%", f"{mes}-%", cid, f"{mes}-31",
+        )
+        resposta["caixa"] = dict(caixa)
 
     if membro["papel"] == "sindico":
         resposta["ocorrencias_abertas"] = um(
@@ -77,5 +96,6 @@ def painel(req, cid):
                    WHERE v.condominio_id = ? AND e.criado_em >= datetime('now', '-24 hours')""",
                 cid,
             )[0],
+            "encomendas": um("SELECT COUNT(*) FROM encomendas WHERE condominio_id = ? AND retirada_em IS NULL", cid)[0],
         }
     return resposta

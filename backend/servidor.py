@@ -12,8 +12,8 @@ from urllib.parse import parse_qsl, urlsplit
 
 from . import auth, db
 from . import (  # noqa: F401  (registram as rotas)
-    rotas_avisos, rotas_condominio, rotas_conta, rotas_contas, rotas_ocorrencias, rotas_painel, rotas_reservas,
-    rotas_sistema, rotas_taxas, rotas_visitas,
+    rotas_avisos, rotas_condominio, rotas_conta, rotas_contas, rotas_encomendas, rotas_enquetes, rotas_ocorrencias,
+    rotas_painel, rotas_reservas, rotas_sistema, rotas_taxas, rotas_telefones, rotas_visitas,
 )
 from .web import Arquivo, ErroHTTP, Requisicao, encontrar
 

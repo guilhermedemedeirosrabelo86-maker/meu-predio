@@ -9,6 +9,9 @@ import { telaAvisos, telaEditarAviso } from './telas/avisos.js';
 import { telaConvite, telaCondominios, telaNovoCondominio } from './telas/condominios.js';
 import { telaContas, telaEditarLancamento, telaLancamento } from './telas/contas.js';
 import { telaTaxas } from './telas/taxas.js';
+import { telaEncomendas } from './telas/encomendas.js';
+import { telaEnquetes, telaNovaEnquete } from './telas/enquetes.js';
+import { telaTelefones } from './telas/telefones.js';
 import { telaCelular } from './telas/celular.js';
 import { telaCriarConta, telaEntrar } from './telas/conta.js';
 import { telaInicio } from './telas/inicio.js';
@@ -64,6 +67,10 @@ const ROTAS = [
   { padrao: 'contas/:id/editar', tela: telaEditarLancamento, condominio: true, papeis: ['sindico'], aba: 'contas' },
   { padrao: 'moradores', tela: telaMoradores, condominio: true, papeis: ['sindico'], aba: 'moradores' },
   { padrao: 'unidade', tela: telaUnidade, condominio: true, aba: 'unidade' },
+  { padrao: 'encomendas', tela: telaEncomendas, condominio: true, aba: 'encomendas' },
+  { padrao: 'enquetes', tela: telaEnquetes, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'enquetes' },
+  { padrao: 'enquetes/nova', tela: telaNovaEnquete, condominio: true, papeis: ['sindico'], aba: 'enquetes' },
+  { padrao: 'telefones', tela: telaTelefones, condominio: true, aba: 'telefones' },
 ];
 
 // Navegação. A barra de baixo (celular) mostra o que cada perfil mais usa; o resto fica na grade do Início
@@ -71,19 +78,23 @@ const ROTAS = [
 const NAVEGACAO = {
   morador: [
     { id: 'inicio', rotulo: 'Início' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },
-    { id: 'visitas', rotulo: 'Visitas' }, { id: 'ocorrencias', rotulo: 'Ocorrências', celular: false },
+    { id: 'visitas', rotulo: 'Visitas' }, { id: 'encomendas', rotulo: 'Encomendas', celular: false },
+    { id: 'enquetes', rotulo: 'Enquetes', celular: false }, { id: 'ocorrencias', rotulo: 'Ocorrências', celular: false },
     { id: 'contas', rotulo: 'Contas', celular: false }, { id: 'unidade', rotulo: 'Minha unidade', celular: false },
-    { id: 'menu', rotulo: 'Mais', computador: false },
+    { id: 'telefones', rotulo: 'Telefones úteis', celular: false }, { id: 'menu', rotulo: 'Mais', computador: false },
   ],
   sindico: [
     { id: 'inicio', rotulo: 'Início' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'contas', rotulo: 'Contas' },
     { id: 'moradores', rotulo: 'Moradores' }, { id: 'reservas', rotulo: 'Reservas', celular: false },
     { id: 'ocorrencias', rotulo: 'Ocorrências', celular: false }, { id: 'visitas', rotulo: 'Visitas', celular: false },
-    { id: 'portaria', rotulo: 'Portaria', celular: false }, { id: 'menu', rotulo: 'Mais', computador: false },
+    { id: 'portaria', rotulo: 'Portaria', celular: false }, { id: 'encomendas', rotulo: 'Encomendas', celular: false },
+    { id: 'enquetes', rotulo: 'Enquetes', celular: false }, { id: 'telefones', rotulo: 'Telefones úteis', celular: false },
+    { id: 'menu', rotulo: 'Mais', computador: false },
   ],
   portaria: [
-    { id: 'portaria', rotulo: 'Portaria' }, { id: 'avisos', rotulo: 'Avisos' }, { id: 'reservas', rotulo: 'Reservas' },
-    { id: 'menu', rotulo: 'Mais' },
+    { id: 'portaria', rotulo: 'Portaria' }, { id: 'encomendas', rotulo: 'Encomendas' }, { id: 'avisos', rotulo: 'Avisos' },
+    { id: 'reservas', rotulo: 'Reservas', celular: false }, { id: 'telefones', rotulo: 'Telefones úteis', celular: false },
+    { id: 'menu', rotulo: 'Mais', computador: false },
   ],
 };
 
@@ -268,6 +279,7 @@ function agendarPreCarga() {
     membro.papel === 'sindico' && base,
     membro.papel === 'morador' && membro.unidade_id && `${base}/taxas/minha`,
     membro.unidade_id && `${base}/veiculos`,
+    `${base}/encomendas`, `${base}/telefones`, morador && `${base}/enquetes`,
   ].filter(Boolean);
   const quandoOcioso = window.requestIdleCallback || ((f) => setTimeout(f, 300));
   quandoOcioso(async () => {
@@ -293,7 +305,7 @@ function montarNaMoldura(conteudo, rota) {
   moldura.main.replaceChildren(conteudo);
 }
 
-/** Celular: o destaque colorido da barra de baixo desliza até a aba aberta. */
+/** Celular: o traço amarelo da barra de baixo desliza até a aba aberta. */
 function posicionarIndicador() {
   const indicador = moldura?.nav?.querySelector('.nav-indicador');
   if (!indicador) return;
@@ -304,10 +316,10 @@ function posicionarIndicador() {
   }
   const base = moldura.nav.getBoundingClientRect();
   const alvo = ativo.getBoundingClientRect();
+  // Um traço amarelo no alto da barra, da largura do ícone da aba aberta.
   Object.assign(indicador.style, {
     width: `${alvo.width}px`,
-    height: `${alvo.height}px`,
-    transform: `translate(${alvo.left - base.left}px, ${alvo.top - base.top}px)`,
+    transform: `translateX(${alvo.left - base.left}px)`,
   });
   if (!indicador.classList.contains('visivel')) {
     // Primeira vez (ou depois de sumir): aparece direto no lugar, sem deslizar de longe.
@@ -329,7 +341,7 @@ function criarMoldura(chave) {
       href: `#/${item.id}`,
       'data-aba': item.id,
     },
-    h('span', { class: 'nav-icone' }, icone(item.id)),
+    h('span', { class: 'nav-icone' }, icone(item.id === 'encomendas' ? 'pacote' : item.id)),
     h('span', {}, item.rotulo),
     item.id === 'avisos' && h('span', { class: 'nav-contador', id: 'contador-avisos', hidden: !estado.naoLidos },
       estado.naoLidos > 9 ? '9+' : estado.naoLidos))),

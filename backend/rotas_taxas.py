@@ -83,6 +83,7 @@ def situacao_da_unidade(conn, cid, unidade_id, dia):
         "situacao": estados.get(atual, "pendente"),
         "meses_atrasados": sum(1 for e in estados.values() if e == "atrasada"),
         "vencimento": config["vencimento"],
+        "valor_centavos": config["valor_centavos"],
     }
 
 
