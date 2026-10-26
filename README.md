@@ -1,13 +1,13 @@
 # Meu Prédio
 
 App para condomínios pequenos (8 a 40 unidades) geridos por síndico morador.
-É um web app instalável no celular (PWA), com menu lateral e layout em colunas no computador, e tema claro/escuro automático. A identidade visual, chamada "Interfone", vem do próprio prédio: fundo cinza-concreto, grafite do painel do interfone e o amarelo de sinalização. O número da unidade aparece numa plaquinha amarela em letra condensada, os ícones são de traço e sem cor, e os painéis têm borda fina em vez de sombra.
+É um web app instalável no celular (PWA), com menu lateral e layout em colunas no computador. O visual é claro e suave: fundo quase branco, cartões brancos com sombra leve e cantos arredondados, azul como cor de destaque e a foto de um condomínio no topo do Início e das telas de entrada (foto de Aalo Lens no Unsplash, em `web/img/`). No celular, a barra de baixo é branca e flutuante.
 
-A experiência foi pensada para parecer um app nativo: a troca de abas é instantânea e sem recarregar a página (o endereço muda pela API de histórico, o que evita o Safari do iPhone recarregar tudo a cada aba), com um destaque que desliza na barra de baixo, a rolagem é restaurada ao voltar, o título grande sobe para a barra ao rolar, puxar para atualizar, deslizar no calendário e nas fotos, botões com spinner e vibração leve no Android, máscaras de telefone e placa, e a fonte Archivo embutida, usada em duas larguras: condensada nos títulos e números, normal no texto (licença em `web/fonts/`). Quem configura "reduzir movimento" no sistema recebe o app sem animações.
+A experiência foi pensada para parecer um app nativo: a troca de abas é instantânea e sem recarregar a página (o endereço muda pela API de histórico, o que evita o Safari do iPhone recarregar tudo a cada aba), com um destaque que desliza na barra de baixo, a rolagem é restaurada ao voltar, o título grande sobe para a barra ao rolar, puxar para atualizar, deslizar no calendário e nas fotos, botões com spinner e vibração leve no Android, máscaras de telefone e placa, e a fonte Poppins embutida (licença em `web/fonts/`). Quem configura "reduzir movimento" no sistema recebe o app sem animações.
 
 Para rodar liso no celular, as telas já visitadas abrem na hora com os últimos dados e se atualizam sozinhas em segundo plano, e os dados das abas principais são buscados assim que o Início aparece. Salvar qualquer coisa descarta esse cache. O servidor mantém a conexão aberta entre os pedidos, compacta os arquivos de texto e responde "não mudou" para os que o navegador já tem.
 
-- **Início:** a placa da unidade, uma lista do que pede ação agora (pendências do síndico; encomendas, enquetes, taxa e visitas do morador), o saldo do caixa com o movimento do mês, todos os módulos do perfil com selos e o que aconteceu por último.
+- **Início:** a foto do condomínio com a saudação e a unidade, os atalhos de todos os módulos em ícones redondos, uma lista do que pede ação agora (pendências do síndico; encomendas, enquetes, taxa e visitas do morador), o saldo do caixa com o movimento do mês e o que aconteceu por último.
 - **Navegação:** a barra de baixo do celular mostra o que cada perfil mais usa (síndico: Início, Avisos, Contas, Moradores; morador: Início, Avisos, Reservas, Visitas) e "Mais" reúne o perfil, todos os módulos e a conta. No computador, tudo fica no menu lateral.
 - **Conta e acesso:** cadastro, login e sessão de 30 dias. Três perfis: síndico, morador e portaria.
 - **Condomínio e convites:** o síndico cadastra o prédio e manda o link no WhatsApp. O morador escolhe a unidade, ou o funcionário entra como portaria, e o síndico aprova.
@@ -41,7 +41,7 @@ Ou dê dois cliques em `iniciar.bat`. O app abre em http://localhost:8000.
 Se o celular não carregar, o Firewall do Windows está bloqueando. Na primeira vez, o Windows pergunta se o Python pode acessar a rede: permita no tipo de rede em uso. Em computador da empresa, isso pode exigir o suporte de TI.
 Pelo IP, o navegador não libera instalação na tela inicial nem notificações, porque elas exigem HTTPS. Isso passa a funcionar quando o app for hospedado.
 
-O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos e comprovantes ficam em `dados/arquivos/`. Cada execução do servidor registra os pedidos em `dados/acessos.log`, útil para investigar lentidão. Ao iniciar, o servidor atualiza sozinho bancos criados por versões anteriores.
+O banco de dados fica em `dados/condominio.db` (SQLite), e as fotos e comprovantes ficam dentro dele, na tabela `arquivos`. Cada execução do servidor registra os pedidos em `dados/acessos.log`, útil para investigar lentidão. Ao iniciar, o servidor atualiza sozinho bancos criados por versões anteriores.
 
 ## Testes
 
