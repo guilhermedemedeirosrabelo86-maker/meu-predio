@@ -1295,7 +1295,24 @@ a.cartao:active { background: var(--superficie-3); }
   .seletor-condominio .logo { display: none; }
   .titulo-topo { left: 120px; right: 120px; }
 
-  .conteudo { max-width: var(--largura); padding: 4px var(--respiro) 56px; }
+  .conteudo { position: relative; z-index: 1; max-width: var(--largura); padding: 4px var(--respiro) 56px; }
+  /* Telas estreitas (leitura e formulário): o nome do condomínio acompanha a coluna central */
+  .app:has(.pagina.estreita) .barra-topo { padding-inline: max(var(--respiro), (100% - 780px) / 2); }
+
+  /* Fileira de prédios em azul bem claro, parada no pé da tela, para o fundo não ficar vazio.
+     À noite os prédios escurecem e algumas janelas acendem (como a foto do topo, segue o horário). */
+  .app.com-nav::after {
+    content: "";
+    position: fixed;
+    z-index: 0;
+    left: 240px;
+    right: 0;
+    bottom: 0;
+    height: 220px;
+    background: url("/img/skyline.svg") center bottom / auto 220px repeat-x;
+    pointer-events: none;
+  }
+  .periodo-noite .app.com-nav::after { background-image: url("/img/skyline-noite.svg"); }
 
   .topo-pagina { padding-top: 18px; }
   .topo-pagina .subtitulo { font-size: 1rem; }

@@ -101,6 +101,12 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   Liberar visita; morador: Liberar visita, Abrir ocorrência, Reservar área).
   O Início usa até 1480px de largura e a barra do topo acompanha a largura do conteúdo (`--largura`/`--respiro`).
   O celular não mudou. `taxas_mes` no `/painel` (só síndico) dá pagas/unidades do mês.
+- **Fundo no computador (2026-10-26):** o usuário achou o fundo cinza liso vazio no notebook/monitor. Escolheu,
+  entre 3 opções (foto desfocada no topo, prédios no rodapé, degradê nos cantos), os **prédios no rodapé**, "melhorado":
+  `web/img/skyline.svg` (dia) e `skyline-noite.svg` (prédios mais escuros, janelas amarelas acesas), em azul bem
+  claro, fixos no pé da tela (`.app.com-nav::after`, só ≥960px). Duas camadas de prédios, caixas d'água, antenas e
+  árvores. Os SVGs foram gerados por um script Python (prédios aleatórios com semente fixa); para mudar, edite o SVG
+  ou gere de novo. Celular sem mudança.
 - **Login no computador (2026-10-26):** foto na metade esquerda, de cima a baixo; login à direita, com a marca em
   texto escuro. No celular, igual (foto no alto). Vale para entrar/cadastro, passe do visitante e "Abrir no celular".
 - **Histórico do síndico:** só o síndico vê; ninguém apaga pelo app.
@@ -140,6 +146,8 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Fundo do computador: fileira de prédios em azul claro no rodapé (versão noite com janelas acesas);
+  nome do condomínio alinhado nas telas estreitas. Commitado.
 - 2026-10-26 — Foto da noite trocada: era uma casa, agora são torres modernas ao anoitecer (Aalo Lens, mesmo
   fotógrafo da manhã e da tarde). Commitado.
 - 2026-10-26 — Login no computador "desenquadrado" corrigido: a foto em pé virava uma faixa larga cortada; agora
