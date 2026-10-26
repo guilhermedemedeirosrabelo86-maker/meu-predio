@@ -70,6 +70,18 @@ def unidades_atrasadas(conn, cid, dia):
     )
 
 
+def pagas_no_mes(conn, cid, dia):
+    """Quantas unidades já pagaram o mês atual, de quantas (painel do síndico). Sem valor definido, não cobra."""
+    if not _config(conn, cid)["valor_centavos"]:
+        return None
+    mes = dia.isoformat()[:7]
+    return {
+        "mes": mes,
+        "pagas": len(_pagamentos(conn, cid, [mes])),
+        "unidades": conn.execute("SELECT COUNT(*) FROM unidades WHERE condominio_id = ?", (cid,)).fetchone()[0],
+    }
+
+
 def situacao_da_unidade(conn, cid, unidade_id, dia):
     """Mês atual e meses em atraso de uma unidade (painel do morador)."""
     config = _config(conn, cid)

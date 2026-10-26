@@ -1,7 +1,7 @@
 """Resumo para a tela inicial: um número por módulo, numa única chamada."""
 from .comum import exigir_membro, hoje
 from .rotas_enquetes import sem_voto
-from .rotas_taxas import situacao_da_unidade, unidades_atrasadas
+from .rotas_taxas import pagas_no_mes, situacao_da_unidade, unidades_atrasadas
 from .web import rota
 
 # Ninguém é avisado do que fez: o que a própria pessoa registrou não entra nas contagens.
@@ -82,6 +82,7 @@ def painel(req, cid):
             )[0],
             "taxas_atrasadas": unidades_atrasadas(conn, cid, hoje()),
         }
+        resposta["taxas_mes"] = pagas_no_mes(conn, cid, hoje())
     else:
         resposta["ocorrencias_abertas"] = um(
             """SELECT COUNT(*) FROM ocorrencias WHERE condominio_id = ? AND status <> 'resolvida'

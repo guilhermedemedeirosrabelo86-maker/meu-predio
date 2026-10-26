@@ -2,7 +2,7 @@ import { get } from '../api.js';
 import { estado } from '../estado.js';
 import { atualizarContador } from '../notificacoes.js';
 import {
-  dinheiro, formatarDia, h, item, maiuscula, pill, primeiroNome, quando, saudacao, secao, tile,
+  dinheiro, formatarDia, h, icone, item, maiuscula, pill, primeiroNome, quando, saudacao, secao, tile,
 } from '../ui.js';
 
 const plural = (n, um, varios) => (n === 1 ? `1 ${um}` : `${n} ${varios}`);
@@ -43,19 +43,46 @@ export async function telaInicio() {
       membro.unidade_id && ['unidade', 'carro', 'Minha unidade'],
       ['telefones', 'telefones', 'Telefones úteis'],
     ]).filter(Boolean);
-  // Completa a grade (4 por linha no computador, 2 no celular) com atalhos úteis.
+  // Completa a grade (4 por linha no celular) com atalhos úteis.
   const complementos = [['perfil', 'perfil', 'Meu perfil'], ['condominios', 'trocar', 'Condomínios'], ['menu', 'menu', 'Mais']];
   while (modulos.length % 4 && complementos.length) modulos.push(complementos.shift());
 
-  const data = maiuscula(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }));
-  return h('div', { class: 'pagina' },
-    // Foto do condomínio no topo, com a saudação; os atalhos sobem um pouco sobre ela.
-    h('header', { class: 'hero-foto' },
-      h('p', { class: 'data' }, data),
-      h('h1', {}, `${saudacao()}, ${primeiroNome(estado.usuario.nome)}`),
-      membro.unidade && h('span', { class: 'unidade' }, `Unidade ${membro.unidade}`)),
+  // No computador o menu lateral já leva a todas as telas; no lugar dos atalhos ficam ações que já fazem algo.
+  const acoes = (sindico
+    ? [
+      ['avisos/novo', 'avisos', 'Publicar aviso'],
+      ['contas/novo', 'contas', 'Lançar conta'],
+      ['enquetes/nova', 'enquetes', 'Nova enquete'],
+      ['visitas/nova', 'visitas', 'Liberar visita'],
+    ]
+    : [
+      membro.unidade_id && ['visitas/nova', 'visitas', 'Liberar visita'],
+      ['ocorrencias/nova', 'ocorrencias', 'Abrir ocorrência'],
+      ['reservas', 'reservas', 'Reservar área'],
+    ]).filter(Boolean);
 
-    h('nav', { class: 'atalhos', 'aria-label': 'Atalhos do condomínio' },
+  const data = maiuscula(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }));
+  // No computador, ao lado da foto: o caixa e as taxas do mês (síndico) ou a taxa da unidade (morador).
+  const resumo = [
+    sindico && painel.caixa && cartaoCaixa(painel.caixa),
+    sindico && painel.taxas_mes && cartaoTaxas(painel.taxas_mes),
+    !sindico && painel.taxa && cartaoMinhaTaxa(painel.taxa),
+    !sindico && painel.caixa && cartaoCaixa(painel.caixa),
+  ].filter(Boolean);
+  return h('div', { class: 'pagina' },
+    // Foto do condomínio no topo, com a saudação. No celular, os atalhos sobem um pouco sobre ela.
+    h('div', { class: resumo.length ? 'inicio-topo com-resumo' : 'inicio-topo' },
+      h('header', { class: 'hero-foto' },
+        h('p', { class: 'data' }, data),
+        h('h1', {}, `${saudacao()}, ${primeiroNome(estado.usuario.nome)}`),
+        membro.unidade && h('span', { class: 'unidade' }, `Unidade ${membro.unidade}`)),
+      resumo.length ? h('div', { class: 'inicio-resumo so-computador' }, resumo) : null),
+
+    h('nav', { class: 'acoes-rapidas so-computador', 'aria-label': 'Ações rápidas' },
+      acoes.map(([rota, nomeIcone, rotulo]) => h('a', { class: 'acao-rapida', href: `#/${rota}` },
+        tile(nomeIcone), h('span', { class: 'acao-nome' }, rotulo), icone('mais', 'icone fraco')))),
+
+    h('nav', { class: 'atalhos so-celular', 'aria-label': 'Atalhos do condomínio' },
       modulos.map(([rota, nomeIcone, rotulo, selo]) => h('a', { class: 'atalho', href: `#/${rota}` },
         tile(nomeIcone),
         h('span', { class: 'atalho-nome' }, rotulo),
@@ -63,9 +90,8 @@ export async function telaInicio() {
 
     h('div', { class: 'grade sem-sobras' },
       paraVoce(painel, sindico),
-      painel.caixa && caixa(painel.caixa)),
-
-    (painel.ultimo_aviso || painel.proxima_reserva) && secao('Recentes', h('div', { class: 'cartao lista' },
+      painel.caixa && h('div', { class: 'so-celular' }, secao('Caixa', cartaoCaixa(painel.caixa))),
+      (painel.ultimo_aviso || painel.proxima_reserva) && secao('Recentes', h('div', { class: 'cartao lista' },
       painel.ultimo_aviso && item({
         inicio: tile('avisos'),
         titulo: painel.ultimo_aviso.titulo,
@@ -79,7 +105,7 @@ export async function telaInicio() {
         sub: `Sua próxima reserva: ${formatarDia(painel.proxima_reserva.data)}`,
         fim: painel.proxima_reserva.status === 'pendente' ? pill('Aguardando', 'amarelo') : pill('Confirmada', 'verde'),
         href: '#/reservas',
-      }))));
+      })))));
 }
 
 /** O que pede uma ação agora: pendências do síndico e o que chegou para a unidade. */
@@ -108,9 +134,11 @@ function paraVoce(painel, sindico) {
     linhas.map(([rota, nomeIcone, texto, sub]) => item({ inicio: tile(nomeIcone), titulo: texto, sub, href: `#/${rota}` }))));
 }
 
-function caixa({ saldo, entradas, saidas }) {
+const nomeDoMes = (mes) => new Date(`${mes}-15T12:00`).toLocaleDateString('pt-BR', { month: 'long' });
+
+function cartaoCaixa({ saldo, entradas, saidas }) {
   const mes = new Date().toLocaleDateString('pt-BR', { month: 'long' });
-  return secao('Caixa', h('a', { class: 'cartao', href: '#/contas' },
+  return h('a', { class: 'cartao', href: '#/contas' },
     h('div', { class: 'caixa-inicio' },
       h('div', {},
         h('div', { class: 'rotulo' }, 'Saldo do condomínio'),
@@ -118,5 +146,33 @@ function caixa({ saldo, entradas, saidas }) {
       tile('seta')),
     h('div', { class: 'caixa-mes' },
       h('span', {}, `Em ${mes}: `, h('span', { class: 'entrou' }, `+ ${dinheiro(entradas)}`)),
-      h('span', {}, `− ${dinheiro(saidas)}`))));
+      h('span', {}, `− ${dinheiro(saidas)}`)));
+}
+
+/** Síndico: quantas unidades já pagaram a taxa do mês, com uma barra de progresso. */
+function cartaoTaxas({ mes, pagas, unidades }) {
+  const faltam = unidades - pagas;
+  const barra = h('div', { class: 'barra' });
+  barra.style.setProperty('--largura', `${unidades ? (pagas / unidades) * 100 : 0}%`);
+  return h('a', { class: 'cartao', href: '#/contas/taxas' },
+    h('div', { class: 'caixa-inicio' },
+      h('div', {},
+        h('div', { class: 'rotulo' }, `Taxas de ${nomeDoMes(mes)}`),
+        h('div', { class: 'valor' }, `${pagas} de ${unidades} pagas`)),
+      tile('seta')),
+    h('div', { class: 'barra-trilho grossa', role: 'img', 'aria-label': `${pagas} de ${unidades} unidades pagaram` }, barra),
+    faltam > 0 && h('div', { class: 'caixa-mes' }, h('span', {}, `${plural(faltam, 'unidade', 'unidades')} sem pagar este mês`)));
+}
+
+/** Morador: a taxa da própria unidade no mês. */
+function cartaoMinhaTaxa(taxa) {
+  const texto = taxa.situacao === 'paga' ? 'Paga' : taxa.situacao === 'atrasada' ? 'Atrasada' : `Vence dia ${taxa.vencimento}`;
+  const extra = taxa.meses_atrasados > 0 ? plural(taxa.meses_atrasados, 'mês em atraso', 'meses em atraso') : dinheiro(taxa.valor_centavos || 0);
+  return h('a', { class: 'cartao', href: '#/contas/taxas' },
+    h('div', { class: 'caixa-inicio' },
+      h('div', {},
+        h('div', { class: 'rotulo' }, `Minha taxa de ${nomeDoMes(taxa.mes)}`),
+        h('div', { class: `valor${taxa.situacao === 'paga' ? ' positivo' : taxa.situacao === 'atrasada' ? ' negativo' : ''}` }, texto)),
+      tile('seta')),
+    h('div', { class: 'caixa-mes' }, h('span', { class: taxa.meses_atrasados > 0 ? 'atrasou' : '' }, extra)));
 }

@@ -88,6 +88,8 @@ class TesteTaxas(BaseApi):
         self.assertEqual(painel["taxa"], {"mes": "2026-10", "situacao": "paga", "meses_atrasados": 2, "vencimento": 10,
                                           "valor_centavos": 35_000})
         self.assertEqual(sindico.get(f"/api/condominios/{cid}/painel")[1]["pendencias"]["taxas_atrasadas"], 3)
+        self.assertEqual(sindico.get(f"/api/condominios/{cid}/painel")[1]["taxas_mes"], {"mes": "2026-10", "pagas": 1, "unidades": 3})
+        self.assertNotIn("taxas_mes", morador.get(f"/api/condominios/{cid}/painel")[1])
 
         self.pagar(sindico, cid, unidades["102"], "2026-09")
         self.pagar(sindico, cid, unidades["102"], "2026-08")
@@ -104,6 +106,7 @@ class TesteTaxas(BaseApi):
     def test_sem_valor_definido_nao_cobra(self):
         sindico, morador, cid, _ = self.preparar(configurar=False)
         self.assertEqual(sindico.get(f"/api/condominios/{cid}/painel")[1]["pendencias"]["taxas_atrasadas"], 0)
+        self.assertIsNone(sindico.get(f"/api/condominios/{cid}/painel")[1]["taxas_mes"])
         self.assertIsNone(morador.get(f"/api/condominios/{cid}/painel")[1]["taxa"])
 
     def test_desfazer_dos_dois_lados(self):

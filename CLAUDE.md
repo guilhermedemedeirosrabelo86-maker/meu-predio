@@ -43,7 +43,7 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 - **Banco em produção:** Turso, plano grátis, região AWS us-east-1 (perto da Vercel, que roda em Washington).
 - **Variáveis na Vercel:** `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `CRON_SECRET`, `APP_URL` configuradas.
   **Falta** `RESEND_API_KEY` e `EMAIL_REMETENTE` (sem elas o "esqueci minha senha" não envia e-mail).
-- **Visual:** "Claro" (ver Decisões).
+- **Visual:** "Claro" (ver Decisões). Início no computador no layout "B" (ver Decisões).
 - **Contadores em tempo real** nas abas (barra de baixo e menu lateral): `GET /api/condominios/{cid}/contadores`,
   consultado a cada 10 s com o app na tela (60 s em segundo plano), ao voltar para o app e logo após qualquer
   ação (`dados-mudaram`). Quando um número muda, a tela aberta busca os dados de novo (`revalidar`).
@@ -85,17 +85,33 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   luzes quentes). O usuário quer noite de verdade (imersão) e arquitetura moderna e bonita: recusou foto de
   entardecer escurecida e um prédio antigo de tijolo.
   Classe `periodo-*` no `<html>` (`aplicarPeriodo` em ui.js, conferida a cada minuto); a saudação segue os
-  mesmos horários. Manhã e tarde: Aalo Lens (Unsplash). Noite: foto 31737860 do Pexels (licença Pexels).
+  mesmos horários. Manhã, tarde e noite: Aalo Lens (Unsplash; a da noite é a QHyUx3OcCns, torres ao anoitecer
+  com janelas acesas). A noite antes era uma casa (Pexels 31737860); trocada em 2026-10-26 porque o app se chama
+  "Meu Prédio" e tem que ser prédio. O usuário escolheu essa entre 4 opções, mesmo com o céu ainda não fechado.
 - **Foto do prédio (opção "A", escolhida pelo usuário):** o síndico envia no Perfil a foto do prédio, que vale
   o dia todo no topo do Início, e opcionalmente uma "à noite" (18h–5h). Sem foto, ficam as fotos padrão por
   horário. Colunas `foto`/`foto_noite` em `condominios`; arquivo em `arquivos` com nome `predios/<aleatório>`,
   novo a cada envio (o celular pode guardar sem mostrar foto velha). Aplicada em `atualizarFotoDoTopo` (app.js).
   Serve para vender: o app "vira" do prédio do cliente na demonstração.
+- **Início no computador, layout "B" (2026-10-26):** o usuário achou o Início vazio no notebook/monitor e o cartão
+  de atalhos "encavalado" na foto meio torto. Escolheu, entre 3 maquetes, a "B": foto com a saudação à esquerda e,
+  à direita, dois cartões (síndico: saldo + "3 de 6 pagas" com barra; morador: minha taxa + saldo); embaixo,
+  atenção e recentes lado a lado. A grade de atalhos **não aparece no computador** (o usuário achou repetitivo com o
+  menu lateral): no lugar, "ações rápidas" que já fazem algo (síndico: Publicar aviso, Lançar conta, Nova enquete,
+  Liberar visita; morador: Liberar visita, Abrir ocorrência, Reservar área).
+  O Início usa até 1480px de largura e a barra do topo acompanha a largura do conteúdo (`--largura`/`--respiro`).
+  O celular não mudou. `taxas_mes` no `/painel` (só síndico) dá pagas/unidades do mês.
+- **Login no computador (2026-10-26):** foto na metade esquerda, de cima a baixo; login à direita, com a marca em
+  texto escuro. No celular, igual (foto no alto). Vale para entrar/cadastro, passe do visitante e "Abrir no celular".
 - **Histórico do síndico:** só o síndico vê; ninguém apaga pelo app.
 - **Contadores e selos:** ninguém é avisado do que ele mesmo fez (encomenda que registrou, enquete ou
   ocorrência que criou, reserva que pediu). Vale para o menu (`/contadores`) e para o Início (`/painel`).
 
 ## Armadilhas (leia antes de mexer)
+
+- **Fotos do topo são em pé (até 1000×1500):** numa faixa larga e baixa com `cover`, o navegador amplia e corta a
+  foto e só sobra um pedaço do meio (no login do computador aparecia só o teto da varanda). Use molduras em pé
+  ou quase quadradas para elas.
 
 - **Safari do iPhone:** a navegação usa `history.pushState` (`irPara` em `web/js/estado.js`).
   Nunca mude `location.hash` direto: o Safari recarrega a página inteira.
@@ -124,6 +140,13 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Foto da noite trocada: era uma casa, agora são torres modernas ao anoitecer (Aalo Lens, mesmo
+  fotógrafo da manhã e da tarde). Commitado.
+- 2026-10-26 — Login no computador "desenquadrado" corrigido: a foto em pé virava uma faixa larga cortada; agora
+  ocupa a metade esquerda da tela. Celular igual. Commitado.
+- 2026-10-26 — Início no computador refeito (layout "B": foto + caixa/taxas ao lado, atalhos numa faixa, atenção e
+  recentes lado a lado; barra do topo alinhada); atalhos trocados por ações rápidas no computador (repetiam o menu).
+  `taxas_mes` no painel do síndico. Celular igual. Commitado.
 - 2026-10-26 — Backup/restauração (backup.py, backup.bat), revisão de segurança rota por rota (3 correções),
   trocar senha no Perfil, "Abrir no celular" só na rede local. Primeiro backup real feito. E-mail de contato nos termos. Commitado.
 - 2026-10-26 — Síndico envia a foto do prédio (dia e, opcional, noite) no Perfil; aparece no topo do Início
