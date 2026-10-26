@@ -75,10 +75,11 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   redondos azul-claro. Substituiu o visual "Interfone" (concreto/grafite/amarelo), a pedido do usuário,
   com base numa referência de app imobiliário.
 - **Foto do topo pela hora do celular (2026-10-26):** manhã 5h–12h (render ao amanhecer + brilho alaranjado),
-  tarde 12h–18h (a foto original), noite 18h–5h (foto real de condomínio à noite, janelas acesas — o usuário
-  pediu noite de verdade, para imersão; não usar foto de entardecer escurecida).
+  tarde 12h–18h (a foto original), noite 18h–5h (residência moderna de alto padrão à noite, céu azul-noite e
+  luzes quentes). O usuário quer noite de verdade (imersão) e arquitetura moderna e bonita: recusou foto de
+  entardecer escurecida e um prédio antigo de tijolo.
   Classe `periodo-*` no `<html>` (`aplicarPeriodo` em ui.js, conferida a cada minuto); a saudação segue os
-  mesmos horários. Manhã e tarde: Aalo Lens (Unsplash). Noite: foto 16127140 do Pexels (licença Pexels).
+  mesmos horários. Manhã e tarde: Aalo Lens (Unsplash). Noite: foto 31737860 do Pexels (licença Pexels).
 - **Histórico do síndico:** só o síndico vê; ninguém apaga pelo app.
 - **Contadores e selos:** ninguém é avisado do que ele mesmo fez (encomenda que registrou, enquete ou
   ocorrência que criou, reserva que pediu). Vale para o menu (`/contadores`) e para o Início (`/painel`).
@@ -110,6 +111,8 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Foto da noite trocada por uma residência moderna (a anterior, prédio de tijolo, foi achada feia).
+  Commitado.
 - 2026-10-26 — Foto do topo muda com a hora (manhã, tarde, noite de verdade) no Início e no login; saudação nos
   mesmos horários ("Boa noite" de madrugada). Commitado junto com contadores, zoom e fluidez.
 - 2026-10-26 — Zoom do iPhone corrigido (letra 16px nos campos, sem zoom no toque duplo); contadores em tempo
