@@ -1,7 +1,7 @@
 # Meu Prédio
 
 App para condomínios pequenos (8 a 40 unidades) geridos por síndico morador.
-É um web app instalável no celular (PWA), com menu lateral e layout em colunas no computador. O visual é claro e suave: fundo quase branco, cartões brancos com sombra leve e cantos arredondados, azul como cor de destaque e a foto de um condomínio no topo do Início e das telas de entrada (foto de Aalo Lens no Unsplash, em `web/img/`). No celular, a barra de baixo é branca e flutuante.
+É um web app instalável no celular (PWA), com menu lateral e layout em colunas no computador. O visual é claro e suave: fundo quase branco, cartões brancos com sombra leve e cantos arredondados, azul como cor de destaque e a foto de um condomínio no topo do Início e das telas de entrada, que muda com a hora do celular: amanhecer de manhã, dia à tarde e janelas acesas à noite (fotos de Aalo Lens no Unsplash e, a da noite, do Pexels; em `web/img/`). No celular, a barra de baixo é branca e flutuante.
 
 A experiência foi pensada para parecer um app nativo: a troca de abas é instantânea e sem recarregar a página (o endereço muda pela API de histórico, o que evita o Safari do iPhone recarregar tudo a cada aba), com um destaque que desliza na barra de baixo, a rolagem é restaurada ao voltar, o título grande sobe para a barra ao rolar, puxar para atualizar, deslizar no calendário e nas fotos, botões com spinner e vibração leve no Android, máscaras de telefone e placa, e a fonte Poppins embutida (licença em `web/fonts/`). Quem configura "reduzir movimento" no sistema recebe o app sem animações.
 

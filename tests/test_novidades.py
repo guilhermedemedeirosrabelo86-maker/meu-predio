@@ -25,7 +25,8 @@ class TesteEncomendas(BaseApi):
         self.assertEqual(do_morador["unidades"], [])
         self.assertEqual(len(porteiro.get(url)[1]["aguardando"]), 2)
         self.assertEqual(morador.get(f"/api/condominios/{cid}/painel")[1]["encomendas"], 1)
-        self.assertEqual(sindico.get(f"/api/condominios/{cid}/painel")[1]["portaria"]["encomendas"], 2)
+        # O síndico registrou uma das duas: só a que a portaria registrou conta para ele.
+        self.assertEqual(sindico.get(f"/api/condominios/{cid}/painel")[1]["portaria"]["encomendas"], 1)
 
         retirada = f"{url}/{criada['id']}/retirada"
         self.assertEqual(morador.post(retirada, {})[0], 403)

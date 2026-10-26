@@ -44,6 +44,10 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 - **Variáveis na Vercel:** `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `CRON_SECRET`, `APP_URL` configuradas.
   **Falta** `RESEND_API_KEY` e `EMAIL_REMETENTE` (sem elas o "esqueci minha senha" não envia e-mail).
 - **Visual:** "Claro" (ver Decisões).
+- **Contadores em tempo real** nas abas (barra de baixo e menu lateral): `GET /api/condominios/{cid}/contadores`,
+  consultado a cada 10 s com o app na tela (60 s em segundo plano), ao voltar para o app e logo após qualquer
+  ação (`dados-mudaram`). Quando um número muda, a tela aberta busca os dados de novo (`revalidar`).
+  No "Mais" do celular aparece a soma das abas que só existem lá.
 - **Segurança/LGPD prontos:** limite de tentativas, PBKDF2 600 mil, esqueci minha senha, histórico do síndico,
   aceite dos termos, baixar meus dados, excluir conta, limpeza diária (cron da Vercel às 06:00 UTC).
 - **Termos e privacidade são rascunho:** faltam os dados da empresa (entre `[colchetes]`
@@ -66,11 +70,18 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 - **E-mail:** Resend, via API HTTP com urllib (`backend/correio.py`).
 - **Visual "Claro" (2026-10-26):** app sempre branco (sem modo escuro), fundo `#f6f7fb`, azul `#2f6fed`,
   fonte Poppins servida pelo próprio app (`web/fonts/`), cantos arredondados, sombras suaves,
-  barra de baixo branca flutuante, foto de condomínio (`web/img/condominio.jpg`, Unsplash) no topo
+  barra de baixo branca flutuante, foto de condomínio (`web/img/condominio-{manha,tarde,noite}.jpg`, Unsplash) no topo
   do Início (barra do topo transparente sobre ela) e nas telas de login/cadastro, atalhos em ícones
   redondos azul-claro. Substituiu o visual "Interfone" (concreto/grafite/amarelo), a pedido do usuário,
   com base numa referência de app imobiliário.
+- **Foto do topo pela hora do celular (2026-10-26):** manhã 5h–12h (render ao amanhecer + brilho alaranjado),
+  tarde 12h–18h (a foto original), noite 18h–5h (foto real de condomínio à noite, janelas acesas — o usuário
+  pediu noite de verdade, para imersão; não usar foto de entardecer escurecida).
+  Classe `periodo-*` no `<html>` (`aplicarPeriodo` em ui.js, conferida a cada minuto); a saudação segue os
+  mesmos horários. Manhã e tarde: Aalo Lens (Unsplash). Noite: foto 16127140 do Pexels (licença Pexels).
 - **Histórico do síndico:** só o síndico vê; ninguém apaga pelo app.
+- **Contadores e selos:** ninguém é avisado do que ele mesmo fez (encomenda que registrou, enquete ou
+  ocorrência que criou, reserva que pediu). Vale para o menu (`/contadores`) e para o Início (`/painel`).
 
 ## Armadilhas (leia antes de mexer)
 
@@ -89,11 +100,21 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   explícito nos testes com curl.
 - **Prints para conferir telas:** Edge headless via CDP (script em Python com `websocket-client`).
   A extensão do Chrome não costuma estar conectada.
+- **Zoom no iPhone:** campos com letra menor que 16px fazem o Safari dar zoom ao tocar; e o toque duplo
+  dá zoom. Por isso `input, textarea, select` têm `font-size: 16px` e o `html` tem `touch-action: manipulation`.
+  Não baixe a letra dos campos.
+- **Cache das telas (`web/js/api.js`):** `get(..., { fresco: true })` atualiza o cache mas **não** redesenha a tela;
+  para buscar de novo e redesenhar se mudou, use `revalidar(caminho)`.
 - **Testes:** `tests/base.py` baixa `auth.ITERACOES` para os testes ficarem rápidos; o cadastro exige
   `"aceito_termos": true`.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Foto do topo muda com a hora (manhã, tarde, noite de verdade) no Início e no login; saudação nos
+  mesmos horários ("Boa noite" de madrugada). Commitado junto com contadores, zoom e fluidez.
+- 2026-10-26 — Zoom do iPhone corrigido (letra 16px nos campos, sem zoom no toque duplo); contadores em tempo
+  real nas abas e no menu lateral (consulta a cada 10 s; ninguém é avisado do que ele mesmo fez); número
+  centralizado na bolinha; telas entram com animação curta; rolagem mais leve; fontes pré-carregadas.
 - 2026-10-26 — Criado este CLAUDE.md como registro oficial, a pedido do usuário. Pendente: commit dele.
 - 2026-10-26 — Visual "Claro" com foto do condomínio no topo, Poppins, barra flutuante, ícone azul
   (commit 909f85e). Publicado na Vercel.

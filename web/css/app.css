@@ -48,14 +48,24 @@
   --mola: cubic-bezier(0.2, 0.8, 0.2, 1);
   --fonte: "Poppins", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   --estreita: 100%;
-  --foto-condominio: url("/img/condominio.jpg");
+  /* Foto do topo conforme a hora do celular (classe periodo-* no <html>, posta por app.js).
+     De manhã, a foto ganha um brilho alaranjado de nascer do sol (--veu-periodo). */
+  --foto-condominio: url("/img/condominio-tarde.jpg");
+  --veu-periodo: linear-gradient(transparent, transparent);
   color-scheme: light;
 }
+.periodo-manha {
+  --foto-condominio: url("/img/condominio-manha.jpg");
+  --veu-periodo: linear-gradient(200deg, rgb(255 170 90 / 38%) 0%, rgb(255 200 140 / 12%) 45%, transparent 70%);
+}
+.periodo-noite { --foto-condominio: url("/img/condominio-noite.jpg"); }
 
 /* --- Base ---------------------------------------------------------------- */
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+/* touch-action: manipulation tira o zoom do toque duplo (o iPhone aumentava a tela ao tocar rápido duas vezes);
+   o zoom de pinça continua funcionando. */
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 body {
   margin: 0;
   background: var(--fundo);
@@ -235,6 +245,9 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
   position: absolute;
   top: 6px;
   left: calc(50% + 8px);
+  display: inline-flex; /* centraliza o número de verdade (a Poppins tem muito espaço acima das letras) */
+  align-items: center;
+  justify-content: center;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -243,10 +256,12 @@ svg.icone { width: 20px; height: 20px; flex-shrink: 0; }
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 700;
-  line-height: 18px;
-  text-align: center;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
   box-shadow: 0 0 0 2px #fff;
 }
+.nav-contador.pulou { animation: pulinho 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pulinho { from { transform: scale(0.4); } }
 
 .so-computador { display: none !important; }
 
@@ -453,6 +468,7 @@ input, textarea, select {
   background: var(--superficie-2);
   color: var(--texto);
   font: inherit;
+  font-size: 16px; /* abaixo de 16px, o iPhone dá zoom na tela ao tocar no campo */
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 input::placeholder, textarea::placeholder { color: var(--texto-3); }
@@ -624,7 +640,7 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
   height: 58vh;
   max-height: 520px;
   border-radius: 0 0 40px 40px;
-  background: linear-gradient(180deg, rgb(10 20 40 / 20%) 0%, rgb(10 20 40 / 68%) 100%), var(--foto-condominio) center 30% / cover;
+  background: linear-gradient(180deg, rgb(10 20 40 / 20%) 0%, rgb(10 20 40 / 68%) 100%), var(--veu-periodo), var(--foto-condominio) center 30% / cover;
 }
 .acesso { position: relative; width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 22px; animation: cascata 0.5s var(--mola) both; }
 .acesso-marca { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-end; gap: 10px; min-height: 30vh; color: #fff; text-shadow: 0 1px 12px rgb(0 0 0 / 25%); }
@@ -650,7 +666,7 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
   justify-content: flex-end;
   gap: 6px;
   border-radius: 0 0 32px 32px;
-  background: linear-gradient(180deg, rgb(10 20 40 / 45%) 0%, rgb(10 20 40 / 12%) 30%, rgb(10 20 40 / 75%) 100%), var(--foto-condominio) center 32% / cover;
+  background: linear-gradient(180deg, rgb(10 20 40 / 45%) 0%, rgb(10 20 40 / 12%) 30%, rgb(10 20 40 / 75%) 100%), var(--veu-periodo), var(--foto-condominio) center 32% / cover;
   color: #fff;
   text-shadow: 0 1px 12px rgb(0 0 0 / 22%);
 }
@@ -717,6 +733,9 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
   position: absolute;
   top: -5px;
   left: calc(50% + 14px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
@@ -725,8 +744,8 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 700;
-  line-height: 20px;
-  text-align: center;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
   box-shadow: 0 0 0 2px var(--superficie);
 }
 
@@ -1174,6 +1193,14 @@ a.cartao:active { background: var(--superficie-3); }
 @keyframes vt-entrar-esquerda { from { opacity: 0; transform: translateX(-36px); } }
 @keyframes vt-sumir { to { opacity: 0; } }
 @keyframes cascata { from { opacity: 0; transform: translateY(14px); } }
+
+/* Entrada das telas (ver animarEntrada em app.js) */
+.conteudo.entra-avancar > * { animation: tela-avancar 0.26s var(--mola) both; }
+.conteudo.entra-voltar > * { animation: tela-voltar 0.26s var(--mola) both; }
+.conteudo.entra-lado > * { animation: tela-lado 0.22s ease-out both; }
+@keyframes tela-avancar { from { opacity: 0; transform: translateX(22px); } }
+@keyframes tela-voltar { from { opacity: 0; transform: translateX(-22px); } }
+@keyframes tela-lado { from { opacity: 0; transform: translateY(6px); } }
 
 /* ==========================================================================
    Notebook e computador: menu lateral grafite, conteúdo largo em colunas

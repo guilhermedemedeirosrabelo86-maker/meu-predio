@@ -359,9 +359,24 @@ export const maiuscula = (texto) => texto.charAt(0).toUpperCase() + texto.slice(
 
 export const primeiroNome = (nome) => nome.trim().split(/\s+/)[0];
 
+/** Parte do dia pela hora do celular: manhã das 5h às 12h, tarde até as 18h, noite no resto. */
+export function periodo() {
+  const hora = new Date().getHours();
+  if (hora >= 5 && hora < 12) return 'manha';
+  return hora >= 12 && hora < 18 ? 'tarde' : 'noite';
+}
+
 export function saudacao() {
-  const horaAtual = new Date().getHours();
-  return horaAtual < 12 ? 'Bom dia' : horaAtual < 18 ? 'Boa tarde' : 'Boa noite';
+  return { manha: 'Bom dia', tarde: 'Boa tarde', noite: 'Boa noite' }[periodo()];
+}
+
+/** Põe no <html> a classe da parte do dia, que escolhe a foto do topo (ver app.css). */
+export function aplicarPeriodo() {
+  const raiz = document.documentElement;
+  const atual = `periodo-${periodo()}`;
+  if (raiz.classList.contains(atual)) return;
+  raiz.classList.remove('periodo-manha', 'periodo-tarde', 'periodo-noite');
+  raiz.classList.add(atual);
 }
 
 export const linkTelefone = (telefone) => `tel:${telefone.replace(/[^\d+]/g, '')}`;

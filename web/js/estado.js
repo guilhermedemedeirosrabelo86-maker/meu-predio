@@ -5,7 +5,7 @@ export const estado = {
   usuario: null,
   condominios: [],
   membro: null,
-  naoLidos: 0,
+  contadores: {}, // números das abas do menu (ver notificacoes.js)
   pedidoInstalacao: null,
 };
 
@@ -19,7 +19,7 @@ export function limparSessao() {
   estado.usuario = null;
   estado.condominios = [];
   estado.membro = null;
-  estado.naoLidos = 0;
+  estado.contadores = {};
 }
 
 // localStorage pode falhar (modo privado, bloqueios); o app funciona sem ele.

@@ -127,13 +127,15 @@ def excluir_enquete(req, cid, eid):
     return {"ok": True}
 
 
-def sem_voto(conn, cid, unidade_id, dia):
-    """Enquetes abertas em que a unidade ainda não votou (para o Início)."""
+def sem_voto(conn, cid, unidade_id, dia, usuario_id=None):
+    """Enquetes abertas em que a unidade ainda não votou (para o Início e o menu).
+    Com usuario_id, não conta as que a própria pessoa criou (ninguém precisa ser avisado do que fez)."""
     if unidade_id is None:
         return 0
     return conn.execute(
         """SELECT COUNT(*) FROM enquetes e WHERE e.condominio_id = ? AND e.encerrada = 0
            AND (e.encerra_em IS NULL OR e.encerra_em >= ?)
+           AND e.autor_id IS NOT ?
            AND NOT EXISTS (SELECT 1 FROM enquete_votos v WHERE v.enquete_id = e.id AND v.unidade_id = ?)""",
-        (cid, dia, unidade_id),
+        (cid, dia, usuario_id, unidade_id),
     ).fetchone()[0]

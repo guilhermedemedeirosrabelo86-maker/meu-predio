@@ -21,6 +21,8 @@ export async function api(metodo, caminho, corpo, { invalida } = {}) {
   }
   const dados = await resposta.json().catch(() => ({}));
   if (!resposta.ok) throw new ErroApi(resposta.status, dados.erro || 'Algo deu errado. Tente novamente.');
+  // Algo foi salvo: os contadores do menu são conferidos de novo (ver notificacoes.js).
+  if (metodo !== 'GET') window.dispatchEvent(new Event('dados-mudaram'));
   return dados;
 }
 
@@ -35,6 +37,7 @@ export async function enviarArquivo(caminho, blob) {
   }
   const dados = await resposta.json().catch(() => ({}));
   if (!resposta.ok) throw new ErroApi(resposta.status, dados.erro || 'Não foi possível enviar a foto.');
+  window.dispatchEvent(new Event('dados-mudaram'));
   return dados;
 }
 
@@ -100,6 +103,11 @@ export async function get(caminho, { fresco = false } = {}) {
     return JSON.parse(guardado);
   }
   return JSON.parse((await buscar(caminho)).texto);
+}
+
+/** Busca de novo no servidor e, se vier diferente do guardado, avisa o app para redesenhar a tela. */
+export function revalidar(caminho) {
+  return buscar(caminho).then(({ mudou }) => mudou && aoMudar(caminho), () => {});
 }
 
 /** Busca antes de a pessoa abrir a tela, para ela abrir na hora. Devolve os dados (null se der erro). */

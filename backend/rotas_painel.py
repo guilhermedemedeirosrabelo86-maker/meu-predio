@@ -4,6 +4,9 @@ from .rotas_enquetes import sem_voto
 from .rotas_taxas import situacao_da_unidade, unidades_atrasadas
 from .web import rota
 
+# Ninguém é avisado do que fez: o que a própria pessoa registrou não entra nas contagens.
+NAO_REGISTREI = "registrado_por IS NOT ?"
+
 
 @rota("GET", "/api/condominios/{cid:int}/painel")
 def painel(req, cid):
@@ -46,10 +49,11 @@ def painel(req, cid):
             unidade, dia, dia,
         )[0]
         resposta["encomendas"] = um(
-            "SELECT COUNT(*) FROM encomendas WHERE unidade_id = ? AND retirada_em IS NULL", unidade
+            f"SELECT COUNT(*) FROM encomendas WHERE unidade_id = ? AND retirada_em IS NULL AND {NAO_REGISTREI}",
+            unidade, uid,
         )[0]
         if membro["papel"] in ("sindico", "morador"):
-            resposta["enquetes_sem_voto"] = sem_voto(conn, cid, unidade, dia)
+            resposta["enquetes_sem_voto"] = sem_voto(conn, cid, unidade, dia, uid)
             resposta["taxa"] = situacao_da_unidade(conn, cid, unidade, hoje())
 
     if membro["papel"] in ("sindico", "morador"):
@@ -66,14 +70,15 @@ def painel(req, cid):
 
     if membro["papel"] == "sindico":
         resposta["ocorrencias_abertas"] = um(
-            "SELECT COUNT(*) FROM ocorrencias WHERE condominio_id = ? AND status <> 'resolvida'", cid
+            "SELECT COUNT(*) FROM ocorrencias WHERE condominio_id = ? AND status <> 'resolvida' AND autor_id IS NOT ?",
+            cid, uid,
         )[0]
         resposta["pendencias"] = {
             "pedidos_entrada": um("SELECT COUNT(*) FROM membros WHERE condominio_id = ? AND status = 'pendente'", cid)[0],
             "reservas": um(
                 """SELECT COUNT(*) FROM reservas r JOIN areas a ON a.id = r.area_id
-                   WHERE a.condominio_id = ? AND r.status = 'pendente' AND r.data >= ?""",
-                cid, dia,
+                   WHERE a.condominio_id = ? AND r.status = 'pendente' AND r.data >= ? AND r.usuario_id IS NOT ?""",
+                cid, dia, uid,
             )[0],
             "taxas_atrasadas": unidades_atrasadas(conn, cid, hoje()),
         }
@@ -96,6 +101,58 @@ def painel(req, cid):
                    WHERE v.condominio_id = ? AND e.criado_em >= datetime('now', '-24 hours')""",
                 cid,
             )[0],
-            "encomendas": um("SELECT COUNT(*) FROM encomendas WHERE condominio_id = ? AND retirada_em IS NULL", cid)[0],
+            "encomendas": um(
+                f"SELECT COUNT(*) FROM encomendas WHERE condominio_id = ? AND retirada_em IS NULL AND {NAO_REGISTREI}",
+                cid, uid,
+            )[0],
         }
     return resposta
+
+
+@rota("GET", "/api/condominios/{cid:int}/contadores")
+def contadores(req, cid):
+    """Números das abas do menu (o que pede atenção), consultados pelo app a cada poucos segundos.
+    Só contagens leves; o último aviso não lido vai junto para a notificação do celular."""
+    membro = exigir_membro(req, cid)
+    conn, uid, unidade, papel = req.conn, req.usuario["id"], membro["unidade_id"], membro["papel"]
+    dia = hoje().isoformat()
+    um = lambda sql, *params: conn.execute(sql, params).fetchone()  # noqa: E731
+
+    ultimo = um(
+        """SELECT a.id, a.titulo FROM avisos a WHERE a.condominio_id = ?
+             AND NOT EXISTS (SELECT 1 FROM avisos_lidos l WHERE l.aviso_id = a.id AND l.usuario_id = ?)
+           ORDER BY a.id DESC LIMIT 1""",
+        cid, uid,
+    )
+    abas = {
+        "avisos": um(
+            """SELECT COUNT(*) FROM avisos a WHERE a.condominio_id = ?
+               AND NOT EXISTS (SELECT 1 FROM avisos_lidos l WHERE l.aviso_id = a.id AND l.usuario_id = ?)""",
+            cid, uid,
+        )[0],
+    }
+    if papel == "portaria":
+        abas["encomendas"] = um(
+            f"SELECT COUNT(*) FROM encomendas WHERE condominio_id = ? AND retirada_em IS NULL AND {NAO_REGISTREI}", cid, uid
+        )[0]
+    elif unidade is not None:
+        abas["encomendas"] = um(
+            f"SELECT COUNT(*) FROM encomendas WHERE unidade_id = ? AND retirada_em IS NULL AND {NAO_REGISTREI}", unidade, uid
+        )[0]
+    if papel in ("sindico", "morador") and unidade is not None:
+        abas["enquetes"] = sem_voto(conn, cid, unidade, dia, uid)
+    if papel == "sindico":
+        abas["moradores"] = um("SELECT COUNT(*) FROM membros WHERE condominio_id = ? AND status = 'pendente'", cid)[0]
+        abas["reservas"] = um(
+            """SELECT COUNT(*) FROM reservas r JOIN areas a ON a.id = r.area_id
+               WHERE a.condominio_id = ? AND r.status = 'pendente' AND r.data >= ? AND r.usuario_id IS NOT ?""",
+            cid, dia, uid,
+        )[0]
+        abas["ocorrencias"] = um(
+            "SELECT COUNT(*) FROM ocorrencias WHERE condominio_id = ? AND status = 'aberta' AND autor_id IS NOT ?", cid, uid
+        )[0]
+        abas["contas"] = unidades_atrasadas(conn, cid, hoje())
+    elif papel == "morador" and unidade is not None:
+        taxa = situacao_da_unidade(conn, cid, unidade, hoje())
+        abas["contas"] = 1 if taxa and (taxa["situacao"] == "atrasada" or taxa.get("meses_atrasados")) else 0
+    return {"abas": abas, "ultimo_aviso": dict(ultimo) if ultimo else None}

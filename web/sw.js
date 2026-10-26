@@ -1,9 +1,9 @@
 // Service worker: deixa o app abrir sem internet (mostrando a última versão)
 // e abre o mural quando o morador toca numa notificação.
-const CACHE = 'meu-predio-v19';
+const CACHE = 'meu-predio-v21';
 const ARQUIVOS = [
   '/', '/index.html', '/manifest.webmanifest', '/icone.svg', '/icone-192.png', '/icone-512.png',
-  '/css/app.css', '/fonts/poppins-400.woff2', '/fonts/poppins-500.woff2', '/fonts/poppins-600.woff2', '/fonts/poppins-700.woff2', '/img/condominio.jpg',
+  '/css/app.css', '/fonts/poppins-400.woff2', '/fonts/poppins-500.woff2', '/fonts/poppins-600.woff2', '/fonts/poppins-700.woff2', '/img/condominio-manha.jpg', '/img/condominio-tarde.jpg', '/img/condominio-noite.jpg',
   '/js/abertura.js', '/js/app.js', '/js/api.js', '/js/estado.js', '/js/notificacoes.js', '/js/qrcode.js', '/js/ui.js',
   '/js/telas/avisos.js', '/js/telas/celular.js', '/js/telas/condominios.js', '/js/telas/conta.js',
   '/js/telas/contas.js', '/js/telas/encomendas.js', '/js/telas/enquetes.js', '/js/telas/historico.js', '/js/telas/inicio.js', '/js/telas/legal.js',

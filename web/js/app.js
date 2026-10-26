@@ -1,10 +1,10 @@
 import {
-  ErroApi, limparCache, preCarregar, quandoMudar, rastrearLeituras,
+  ErroApi, limparCache, preCarregar, quandoMudar, rastrearLeituras, revalidar,
 } from './api.js';
 import {
   carregarUsuario, definirRenderizador, escolherCondominio, estado, irPara, lerLocal, limparSessao,
 } from './estado.js';
-import { iniciarVerificacao, pararVerificacao } from './notificacoes.js';
+import { iniciarVerificacao, pararVerificacao, pintarContadores } from './notificacoes.js';
 import { telaAvisos, telaEditarAviso } from './telas/avisos.js';
 import { telaConvite, telaCondominios, telaNovoCondominio } from './telas/condominios.js';
 import { telaContas, telaEditarLancamento, telaLancamento } from './telas/contas.js';
@@ -28,7 +28,9 @@ import { telaPortaria, telaValidarVisita } from './telas/portaria.js';
 import { telaAreas, telaEditarArea, telaReservas } from './telas/reservas.js';
 import { telaUnidade } from './telas/unidade.js';
 import { telaNovaVisita, telaVisita, telaVisitas } from './telas/visitas.js';
-import { avatar, esqueleto, fecharAbertura, h, icone, NOMES_PAPEL, vibrar } from './ui.js';
+import {
+  aplicarPeriodo, avatar, esqueleto, fecharAbertura, h, icone, NOMES_PAPEL, vibrar,
+} from './ui.js';
 
 // publico: só para quem não está logado | aberta: qualquer um, sem moldura do app
 // condominio: exige um condomínio aberto | papeis: quem pode abrir | aba: item da navegação marcado
@@ -108,6 +110,11 @@ const NAVEGACAO = {
 };
 
 const raiz = document.getElementById('app');
+
+// Foto do topo conforme a hora: aplica já (antes da primeira tela) e confere a cada minuto e ao voltar ao app.
+aplicarPeriodo();
+setInterval(aplicarPeriodo, 60_000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) aplicarPeriodo(); });
 let sessaoVerificada = false;
 let geracao = 0;
 
@@ -249,6 +256,7 @@ async function renderizar({ manterRolagem = false } = {}) {
     const alvo = manterRolagem ? rolagemAtual : direcao === 'voltar' ? rolagens.get(caminho) || 0 : 0;
     montarNaMoldura(conteudo, rota);
     window.scrollTo(0, alvo);
+    if (direcao && !reduzirMovimento()) animarEntrada(moldura.main, direcao);
   } else {
     moldura = null;
     raiz.replaceChildren(conteudo);
@@ -271,6 +279,12 @@ quandoMudar((caminho) => {
       || document.activeElement?.matches('input, textarea, select');
     if (!ocupada) renderizar({ manterRolagem: true });
   }, 60);
+});
+
+// Os contadores do menu mudaram (chegou algo novo): busca de novo o que a tela aberta mostra.
+// Se os dados vierem diferentes, o quandoMudar acima redesenha a tela.
+window.addEventListener('contadores-mudaram', () => {
+  leiturasDaTela.forEach(revalidar);
 });
 
 /** Depois que a primeira tela aparece, busca em segundo plano os dados das abas principais. */
@@ -354,8 +368,13 @@ function criarMoldura(chave) {
     },
     h('span', { class: 'nav-icone' }, icone({ encomendas: 'pacote', historico: 'relogio' }[item.id] || item.id)),
     h('span', {}, item.rotulo),
-    item.id === 'avisos' && h('span', { class: 'nav-contador', id: 'contador-avisos', hidden: !estado.naoLidos },
-      estado.naoLidos > 9 ? '9+' : estado.naoLidos))),
+    // Número do que pede atenção; no "Mais" do celular, a soma das abas que só aparecem lá.
+    h('span', {
+      class: 'nav-contador',
+      'data-contador': item.id,
+      'data-soma': item.id === 'menu' ? itens.filter((i) => i.celular === false).map((i) => i.id).join(',') : null,
+      hidden: true,
+    }))),
     h('a', { class: 'nav-perfil', href: '#/perfil' },
       avatar(estado.usuario.nome, 'pequeno'),
       h('span', { class: 'item-texto' },
@@ -388,6 +407,7 @@ function criarMoldura(chave) {
 
   const main = h('main', { class: 'conteudo' });
   const el = h('div', { class: nav ? 'app com-nav' : 'app' }, nav, topo, main);
+  queueMicrotask(pintarContadores); // a moldura nova já nasce com os números conhecidos
   return { chave, el, main, nav };
 }
 
@@ -434,8 +454,26 @@ function mostrarFalha(erro) {
   fecharAbertura(document.querySelector('.abertura'));
 }
 
+/** A tela nova entra deslizando (avançar/voltar) ou surgindo (troca de aba). Só posição e transparência,
+ * que o celular desenha sem refazer a página. A classe sai no fim para não deixar nada transformado. */
+function animarEntrada(main, direcao) {
+  main.classList.remove('entra-avancar', 'entra-voltar', 'entra-lado');
+  void main.offsetWidth;
+  main.classList.add(`entra-${direcao}`);
+  main.addEventListener('animationend', () => main.classList.remove(`entra-${direcao}`), { once: true });
+}
+
+// Ao rolar, só mexe na barra do topo quando ela muda de estado (e no máximo uma vez por quadro).
+let quadroPedido = false;
 function atualizarBarraTopo() {
-  document.querySelector('.barra-topo')?.classList.toggle('rolada', window.scrollY > 4);
+  if (quadroPedido) return;
+  quadroPedido = true;
+  requestAnimationFrame(() => {
+    quadroPedido = false;
+    const rolada = window.scrollY > 4;
+    const barra = document.querySelector('.barra-topo');
+    if (barra && barra.classList.contains('rolada') !== rolada) barra.classList.toggle('rolada', rolada);
+  });
 }
 
 /** Puxar para atualizar (celular): arrastar para baixo no topo da página recarrega a tela. */
