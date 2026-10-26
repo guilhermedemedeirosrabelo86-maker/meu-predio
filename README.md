@@ -85,10 +85,41 @@ web/
 tests/                   base.py (servidor de teste) e um arquivo por módulo
 ```
 
+## Hospedar na Vercel
+
+Na Vercel, as telas (pasta `web/`) saem direto da rede da Vercel e os pedidos a `/api/...` rodam em `api/index.py`, que usa o mesmo código do servidor local. Como a Vercel não guarda arquivos entre um pedido e outro, o banco fica no [Turso](https://turso.tech) (SQLite na nuvem), e fotos e comprovantes ficam numa tabela do próprio banco.
+
+1. **Turso:** crie uma conta, crie um banco e copie o endereço (`libsql://....turso.io`) e um token de acesso.
+2. **Vercel:** em *Add New → Project*, importe o repositório do GitHub. Não precisa mudar nada no formulário: o `vercel.json` já diz tudo.
+3. Em *Settings → Environment Variables*, adicione as variáveis abaixo e faça um novo deploy.
+
+| Variável | Para quê |
+|---|---|
+| `TURSO_DATABASE_URL` | Endereço do banco (`libsql://...`). Obrigatória. |
+| `TURSO_AUTH_TOKEN` | Token de acesso ao banco. Obrigatória. |
+| `APP_URL` | Endereço do app (ex.: `https://meupredio.vercel.app`), usado no link de "esqueci minha senha". |
+| `RESEND_API_KEY` | Chave do [Resend](https://resend.com), que envia os e-mails. Sem ela, o e-mail não sai. |
+| `EMAIL_REMETENTE` | Ex.: `Meu Prédio <nao-responda@seudominio.com.br>`. O domínio precisa estar verificado no Resend. |
+| `CRON_SECRET` | Uma senha qualquer e longa. A Vercel a usa para rodar, uma vez por dia, a limpeza de dados antigos. |
+
+As tabelas são criadas sozinhas no primeiro acesso. Com HTTPS, o cookie de sessão passa a ser `Secure`.
+
+**Antes de vender:** preencha os dados da empresa no início de `web/js/telas/legal.js` (termos de uso e política de privacidade) e peça para um advogado revisar o texto.
+
+## Segurança e privacidade
+
+- **Senhas:** PBKDF2-SHA256 com 600 mil repetições. Senhas antigas são refeitas no próximo login.
+- **Limite de tentativas** (`backend/limites.py`): 5 senhas erradas por conta e 30 por endereço em 15 minutos; o mesmo vale para códigos de convite e para "esqueci minha senha".
+- **Esqueci minha senha:** link por e-mail que vale 1 hora e uma vez só; trocar a senha desconecta todos os aparelhos.
+- **Histórico** (`backend/historico.py`): o que o síndico faz no dinheiro, nos moradores e nas exclusões fica registrado, sem como apagar pelo app.
+- **LGPD** (`backend/rotas_privacidade.py`): aceite dos termos no cadastro, "Baixar meus dados" e "Excluir minha conta" no Perfil, e limpeza automática de visitantes e encomendas com mais de 180 dias.
+
+Para rodar os testes contra um "Turso" de mentira (servidor local que fala a mesma API): `MEU_PREDIO_TESTE_TURSO=1 python -m unittest discover -s tests`.
+
 ## Próximos passos
 
 1. **Fechamento do mês** (lançamentos travados depois de fechado) e **balancete em PDF** para a assembleia.
-2. **Hospedagem com HTTPS** e **Web Push**, para notificar com o app fechado. Com HTTPS, o celular do morador também passa a instalar o app e a ler o QR Code pela câmera dentro do próprio app (hoje isso só funciona em `localhost`).
+2. **Web Push**, para notificar com o app fechado (depende da hospedagem com HTTPS). Com HTTPS, o celular do morador também passa a instalar o app e a ler o QR Code pela câmera dentro do próprio app (hoje isso só funciona em `localhost`).
 3. **Alertas automáticos:** pedido de reserva, resposta em ocorrência e chegada de visitante.
-4. **Recuperação de senha** por e-mail e limite de tentativas de login.
+4. **Banco Postgres** (Neon ou Supabase, região São Paulo) quando passar do piloto, e fotos num armazenamento de arquivos (Vercel Blob ou Supabase Storage).
 5. **Planos:** o campo `plano` já existe no condomínio (padrão `gratis`). Falta aplicar os limites, como 10 unidades no plano grátis.

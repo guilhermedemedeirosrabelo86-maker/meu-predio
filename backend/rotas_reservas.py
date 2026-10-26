@@ -3,6 +3,7 @@ import re
 import sqlite3
 from datetime import timedelta
 
+from . import historico
 from .comum import booleano, data_iso, exigir_membro, hoje, inteiro, texto, unidade_do_condominio
 from .web import ErroHTTP, rota
 
@@ -113,8 +114,9 @@ def alterar_area(req, cid, aid):
 @rota("DELETE", "/api/condominios/{cid:int}/areas/{aid:int}")
 def excluir_area(req, cid, aid):
     exigir_membro(req, cid, sindico=True)
-    _area_do_condominio(req.conn, cid, aid)
+    area = _area_do_condominio(req.conn, cid, aid)
     req.conn.execute("DELETE FROM areas WHERE id = ?", (aid,))
+    historico.anotar(req, cid, f'Excluiu a área "{area["nome"]}" e as reservas dela')
     return {"ok": True}
 
 

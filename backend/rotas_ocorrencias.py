@@ -1,6 +1,7 @@
 """Ocorrências (barulho, vazamento, garagem...) com fotos e conversa com o síndico."""
 import secrets
 
+from . import db
 from .comum import exigir_membro, texto
 from .web import Arquivo, ErroHTTP, rota
 
@@ -123,9 +124,7 @@ def anexar_foto(req, cid, oid):
     cursor = req.conn.execute(
         "INSERT INTO ocorrencia_fotos (ocorrencia_id, arquivo, tipo) VALUES (?, ?, ?)", (oid, nome, tipo)
     )
-    pasta = req.pasta_arquivos / "ocorrencias"
-    pasta.mkdir(parents=True, exist_ok=True)
-    (pasta / nome).write_bytes(req.bruto)
+    db.salvar_arquivo(req.conn, f"ocorrencias/{nome}", req.bruto)
     return 201, {"id": cursor.lastrowid}
 
 
@@ -135,10 +134,10 @@ def ver_foto(req, cid, fid):
     if foto is None:
         raise ErroHTTP(404, "Foto não encontrada.")
     _visivel(req, cid, foto["ocorrencia_id"])
-    caminho = req.pasta_arquivos / "ocorrencias" / foto["arquivo"]
-    if not caminho.is_file():
+    conteudo = db.ler_arquivo(req.conn, f"ocorrencias/{foto['arquivo']}")
+    if conteudo is None:
         raise ErroHTTP(404, "Foto não encontrada.")
-    return Arquivo(caminho.read_bytes(), foto["tipo"])
+    return Arquivo(conteudo, foto["tipo"])
 
 
 @rota("POST", "/api/condominios/{cid:int}/ocorrencias/{oid:int}/mensagens")

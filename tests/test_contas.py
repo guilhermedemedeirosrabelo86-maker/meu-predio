@@ -1,4 +1,5 @@
 """Testes da prestação de contas."""
+import sqlite3
 from datetime import date
 from unittest import mock
 
@@ -102,12 +103,18 @@ class TesteContas(BaseApi):
         self.assertTrue(morador.get(f"{url}/{lid}")[1]["lancamento"]["comprovante"])
         self.assertEqual(baixar(morador, f"{url}/{lid}/comprovante"), (200, "image/jpeg", JPEG))
 
-        pasta = self.servidor.pasta_arquivos / "contas"
+        def guardados():
+            conn = sqlite3.connect(self.arquivo_db)
+            try:
+                return conn.execute("SELECT COUNT(*) FROM arquivos WHERE nome LIKE 'contas/%'").fetchone()[0]
+            finally:
+                conn.close()
+
         outro_png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
         self.assertEqual(enviar_foto(sindico, f"{url}/{lid}/comprovante", outro_png, "image/png")[0], 201)
-        self.assertEqual(len(list(pasta.iterdir())), 1)  # o anterior foi apagado
+        self.assertEqual(guardados(), 1)  # o anterior foi apagado
         self.assertEqual(sindico.delete(f"{url}/{lid}/comprovante")[0], 200)
-        self.assertEqual(list(pasta.iterdir()), [])
+        self.assertEqual(guardados(), 0)
         self.assertFalse(morador.get(f"{url}/{lid}")[1]["lancamento"]["comprovante"])
 
     def test_outro_condominio_nao_acessa(self):

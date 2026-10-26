@@ -12,8 +12,8 @@ from urllib.parse import parse_qsl, urlsplit
 
 from . import auth, db
 from . import (  # noqa: F401  (registram as rotas)
-    rotas_avisos, rotas_condominio, rotas_conta, rotas_contas, rotas_encomendas, rotas_enquetes, rotas_ocorrencias,
-    rotas_painel, rotas_reservas, rotas_sistema, rotas_taxas, rotas_telefones, rotas_visitas,
+    historico, rotas_avisos, rotas_condominio, rotas_conta, rotas_contas, rotas_encomendas, rotas_enquetes, rotas_ocorrencias,
+    rotas_painel, rotas_privacidade, rotas_reservas, rotas_sistema, rotas_taxas, rotas_telefones, rotas_visitas,
 )
 from .web import Arquivo, ErroHTTP, Requisicao, encontrar
 
@@ -44,6 +44,23 @@ class Manipulador(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     timeout = 30
 
+    @property
+    def caminho_db(self):
+        """Arquivo do SQLite ou endereço do Turso. Na Vercel, a subclasse em api/index.py o define direto."""
+        return self.server.caminho_db
+
+    def ip_cliente(self):
+        """Endereço de quem fez o pedido. Na Vercel, api/index.py lê o cabeçalho que ela preenche."""
+        return self.client_address[0]
+
+    def endereco_app(self):
+        """Endereço público do app, para links em e-mails. Hospedado, defina APP_URL: o cabeçalho
+        Host vem de quem pede e poderia apontar o link para outro site."""
+        if os.environ.get("APP_URL"):
+            return os.environ["APP_URL"].rstrip("/")
+        protocolo = self.headers.get("X-Forwarded-Proto") or "http"
+        return f"{protocolo}://{self.headers.get('Host') or 'localhost'}"
+
     def do_GET(self):
         self._despachar("GET")
 
@@ -71,14 +88,15 @@ class Manipulador(BaseHTTPRequestHandler):
     # --- API ------------------------------------------------------------------
 
     def _api(self, metodo, caminho, query):
-        conn = db.conectar(self.server.caminho_db)
+        conn = db.conectar(self.caminho_db)
         cookies = []
         self._corpo_lido = metodo not in ("POST", "PATCH")
         try:
             funcao, params = encontrar(metodo, caminho)
             corpo, bruto, tipo = self._ler_corpo() if metodo in ("POST", "PATCH") else ({}, None, "")
             usuario, token_hash = self._sessao(conn)
-            req = Requisicao(conn, corpo, usuario, token_hash, query, bruto, tipo, self.server.pasta_arquivos)
+            req = Requisicao(conn, corpo, usuario, token_hash, query, bruto, tipo, self.ip_cliente(), self.endereco_app())
+            req.autorizacao = self.headers.get("Authorization") or ""
             resultado = funcao(req, **params)
             status, dados = resultado if isinstance(resultado, tuple) else (200, resultado)
             conn.commit()
@@ -185,8 +203,10 @@ class Manipulador(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         if self.close_connection:
             self.send_header("Connection", "close")
+        # Hospedado com HTTPS (a Vercel avisa por este cabeçalho), o cookie só viaja criptografado.
+        seguro = "; Secure" if self.headers.get("X-Forwarded-Proto") == "https" else ""
         for cookie in cookies:
-            self.send_header("Set-Cookie", cookie)
+            self.send_header("Set-Cookie", cookie + seguro)
         self._cabecalhos_seguranca()
         self.end_headers()
         self.wfile.write(conteudo)
@@ -257,9 +277,12 @@ class Servidor(ThreadingHTTPServer):
 
 def criar_servidor(host, porta, caminho_db):
     db.inicializar(caminho_db)
+    conn = db.conectar(caminho_db)
+    try:
+        rotas_privacidade.limpar_dados_antigos(conn)
+    finally:
+        conn.close()
     servidor = Servidor((host, porta), Manipulador)
     servidor.caminho_db = caminho_db
     rotas_sistema.INFO.update(host=host, porta=servidor.server_address[1])
-    servidor.pasta_arquivos = Path(caminho_db).resolve().parent / "arquivos"
-    servidor.pasta_arquivos.mkdir(parents=True, exist_ok=True)
     return servidor

@@ -2,7 +2,7 @@
 import re
 import sqlite3
 
-from . import auth
+from . import auth, historico, limites
 from .comum import exigir_login, exigir_membro, inteiro, ordem_natural, texto, unidade_do_condominio
 from .web import ErroHTTP, rota
 
@@ -35,6 +35,19 @@ def _lista_unidades(valor):
         vistas.add(nome.casefold())
         unidades.append(nome)
     return unidades
+
+
+NOMES_PAPEL = {"sindico": "síndico", "morador": "morador", "portaria": "portaria"}
+
+
+def _descrever_membro(conn, membro):
+    """Ana Souza (unidade 102)"""
+    linha = conn.execute(
+        """SELECT u.nome, un.identificador FROM usuarios u LEFT JOIN unidades un ON un.id = ?
+           WHERE u.id = ?""",
+        (membro["unidade_id"], membro["usuario_id"]),
+    ).fetchone()
+    return f"{linha['nome']} (unidade {linha['identificador']})" if linha["identificador"] else linha["nome"]
 
 
 def _membro_do_condominio(conn, condominio_id, membro_id):
@@ -122,11 +135,14 @@ def renovar_convite(req, cid):
 
 # --- Convites ---------------------------------------------------------------
 
-def _condominio_por_codigo(conn, codigo):
-    condominio = conn.execute(
+def _condominio_por_codigo(req, codigo):
+    chave = f"convite-ip:{req.ip}"
+    limites.conferir(req.conn, chave, limites.CONVITE_POR_IP)
+    condominio = req.conn.execute(
         "SELECT * FROM condominios WHERE codigo_convite = ?", (codigo.strip().upper(),)
     ).fetchone()
     if condominio is None:
+        limites.registrar(req.conn, chave)
         raise ErroHTTP(404, "Código de convite não encontrado. Confira com o síndico.")
     return condominio
 
@@ -134,7 +150,7 @@ def _condominio_por_codigo(conn, codigo):
 @rota("GET", "/api/convites/{codigo}")
 def ver_convite(req, codigo):
     exigir_login(req)
-    condominio = _condominio_por_codigo(req.conn, codigo)
+    condominio = _condominio_por_codigo(req, codigo)
     unidades = req.conn.execute(
         "SELECT id, identificador FROM unidades WHERE condominio_id = ?", (condominio["id"],)
     ).fetchall()
@@ -148,7 +164,7 @@ def ver_convite(req, codigo):
 def pedir_entrada(req, codigo):
     """Morador escolhe a unidade; funcionário (portaria/zeladoria) entra sem unidade. O síndico aprova."""
     usuario = exigir_login(req)
-    condominio = _condominio_por_codigo(req.conn, codigo)
+    condominio = _condominio_por_codigo(req, codigo)
     if req.corpo.get("funcionario") is True:
         unidade_id, papel = None, "portaria"
     else:
@@ -194,10 +210,11 @@ def adicionar_unidade(req, cid):
 @rota("DELETE", "/api/condominios/{cid:int}/unidades/{uid:int}")
 def remover_unidade(req, cid, uid):
     exigir_membro(req, cid, sindico=True)
-    unidade_do_condominio(req.conn, cid, uid)
+    unidade = unidade_do_condominio(req.conn, cid, uid)
     if req.conn.execute("SELECT 1 FROM membros WHERE unidade_id = ?", (uid,)).fetchone():
         raise ErroHTTP(409, "Há moradores nesta unidade. Remova-os antes de excluí-la.")
     req.conn.execute("DELETE FROM unidades WHERE id = ?", (uid,))
+    historico.anotar(req, cid, f"Excluiu a unidade {unidade['identificador']}")
     return {"ok": True}
 
 
@@ -280,6 +297,11 @@ def alterar_membro(req, cid, mid):
     if alvo["papel"] == "sindico" and papel != "sindico":
         _garantir_outro_sindico(req.conn, cid, mid)
     req.conn.execute("UPDATE membros SET status = ?, papel = ? WHERE id = ?", (status, papel, mid))
+    quem = _descrever_membro(req.conn, alvo)
+    if status != alvo["status"]:
+        historico.anotar(req, cid, f"Aprovou a entrada de {quem} como {NOMES_PAPEL[papel]}")
+    elif papel != alvo["papel"]:
+        historico.anotar(req, cid, f"Mudou {quem} de {NOMES_PAPEL[alvo['papel']]} para {NOMES_PAPEL[papel]}")
     return {"ok": True}
 
 
@@ -295,7 +317,14 @@ def remover_membro(req, cid, mid):
         alvo = _membro_do_condominio(req.conn, cid, mid)
     if alvo["papel"] == "sindico" and alvo["status"] == "ativo":
         _garantir_outro_sindico(req.conn, cid, mid)
+    quem = _descrever_membro(req.conn, alvo)
     req.conn.execute("DELETE FROM membros WHERE id = ?", (mid,))
+    if alvo["usuario_id"] == usuario["id"]:
+        historico.anotar(req, cid, "Saiu do condomínio" if alvo["status"] == "ativo" else "Cancelou o pedido de entrada")
+    elif alvo["status"] == "ativo":
+        historico.anotar(req, cid, f"Removeu {quem} do condomínio")
+    else:
+        historico.anotar(req, cid, f"Recusou o pedido de entrada de {quem}")
     return {"ok": True}
 
 

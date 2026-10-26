@@ -4,6 +4,7 @@ Marcar como paga cria a entrada na prestação de contas; desfazer apaga a entra
 """
 import sqlite3
 
+from . import historico
 from .comum import data_iso, exigir_membro, hoje, inteiro, ordem_natural, unidade_do_condominio
 from .rotas_contas import MES_RE, VALOR_MAXIMO, _somar_meses
 from .web import ErroHTTP, rota
@@ -158,6 +159,7 @@ def configurar(req, cid):
     req.conn.execute(
         "UPDATE condominios SET taxa_centavos = ?, taxa_vencimento = ? WHERE id = ?", (valor, vencimento, cid)
     )
+    historico.anotar(req, cid, f"Definiu a taxa do condomínio em {historico.reais(valor)}, vencendo todo dia {vencimento}")
     return {"ok": True}
 
 
@@ -192,6 +194,8 @@ def registrar_pagamento(req, cid):
         )
     except sqlite3.IntegrityError:  # dois cliques ao mesmo tempo; o erro desfaz também o lançamento
         raise ErroHTTP(409, "Esta unidade já está com a taxa paga neste mês.")
+    historico.anotar(req, cid, f"Marcou como paga a taxa de {_mes_curto(mes)} da unidade {unidade['identificador']} "
+                               f"({historico.reais(valor)}, pago em {historico.data_br(pago_em.isoformat())})")
     return 201, {"id": cursor.lastrowid, "lancamento_id": lancamento}
 
 
@@ -200,11 +204,14 @@ def desfazer_pagamento(req, cid, pid):
     """Desmarca o pagamento; a entrada correspondente sai da prestação de contas."""
     exigir_membro(req, cid, sindico=True)
     pagamento = req.conn.execute(
-        """SELECT p.lancamento_id FROM pagamentos p JOIN lancamentos l ON l.id = p.lancamento_id
+        """SELECT p.lancamento_id, p.mes, l.valor_centavos, u.identificador AS unidade
+           FROM pagamentos p JOIN lancamentos l ON l.id = p.lancamento_id JOIN unidades u ON u.id = p.unidade_id
            WHERE p.id = ? AND l.condominio_id = ?""",
         (pid, cid),
     ).fetchone()
     if pagamento is None:
         raise ErroHTTP(404, "Pagamento não encontrado.")
     req.conn.execute("DELETE FROM lancamentos WHERE id = ?", (pagamento["lancamento_id"],))  # leva o pagamento junto
+    historico.anotar(req, cid, f"Desmarcou o pagamento da taxa de {_mes_curto(pagamento['mes'])} da unidade "
+                               f"{pagamento['unidade']} ({historico.reais(pagamento['valor_centavos'])})")
     return {"ok": True}

@@ -10,15 +10,17 @@ class ErroHTTP(Exception):
 
 
 class Requisicao:
-    def __init__(self, conn, corpo, usuario, token_hash, query=None, bruto=None, tipo_conteudo="", pasta_arquivos=None):
+    def __init__(self, conn, corpo, usuario, token_hash, query=None, bruto=None, tipo_conteudo="", ip="", endereco=""):
         self.conn = conn
         self.corpo = corpo
         self.query = query or {}
         self.bruto = bruto  # corpo binário (upload de foto)
         self.tipo_conteudo = tipo_conteudo
-        self.pasta_arquivos = pasta_arquivos
         self.usuario = usuario
         self.token_hash = token_hash
+        self.ip = ip  # endereço de quem pediu, para o limite de tentativas
+        self.endereco = endereco  # endereço do app (ex.: https://meupredio.com.br), para links em e-mails
+        self.autorizacao = ""  # cabeçalho Authorization (só o agendador da Vercel usa)
         self.cookies_saida = []
 
 

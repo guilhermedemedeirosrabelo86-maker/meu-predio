@@ -1,4 +1,5 @@
 """Mural de avisos."""
+from . import historico
 from .comum import booleano, exigir_membro, texto
 from .web import ErroHTTP, rota
 
@@ -106,8 +107,9 @@ def editar_aviso(req, cid, aid):
 @rota("DELETE", "/api/condominios/{cid:int}/avisos/{aid:int}")
 def excluir_aviso(req, cid, aid):
     exigir_membro(req, cid, sindico=True)
-    _aviso_do_condominio(req.conn, cid, aid)
+    aviso = _aviso_do_condominio(req.conn, cid, aid)
     req.conn.execute("DELETE FROM avisos WHERE id = ?", (aid,))
+    historico.anotar(req, cid, f'Excluiu o aviso "{aviso["titulo"]}"')
     return {"ok": True}
 
 

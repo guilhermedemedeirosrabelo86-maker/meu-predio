@@ -3,6 +3,7 @@ import re
 import secrets
 from datetime import date
 
+from . import db, historico
 from .comum import data_iso, exigir_membro, hoje, inteiro, texto
 from .rotas_ocorrencias import _tipo_imagem
 from .web import Arquivo, ErroHTTP, rota
@@ -121,6 +122,7 @@ def lancar(req, cid):
            VALUES (?, ?, ?, ?, ?, ?, ?)""",
         (cid, tipo, categoria, descricao, valor, dia, req.usuario["id"]),
     )
+    historico.anotar(req, cid, f'Lançou {_nome_tipo(tipo)} "{descricao}" de {historico.reais(valor)} em {historico.data_br(dia)}')
     return 201, {"id": cursor.lastrowid}
 
 
@@ -140,19 +142,31 @@ def ver_lancamento(req, cid, lid):
 @rota("PATCH", "/api/condominios/{cid:int}/contas/{lid:int}")
 def editar_lancamento(req, cid, lid):
     exigir_membro(req, cid, sindico=True)
-    _lancamento(req, cid, lid)
+    antes = _lancamento(req, cid, lid)
     tipo, categoria, descricao, valor, dia = _validar(req.corpo)
     req.conn.execute(
         """UPDATE lancamentos SET tipo = ?, categoria = ?, descricao = ?, valor_centavos = ?, data = ?
            WHERE id = ?""",
         (tipo, categoria, descricao, valor, dia, lid),
     )
+    historico.anotar(req, cid, f'Editou o lançamento "{antes["descricao"]}": era {_resumo(antes)}, ficou '
+                               f'{_resumo({"tipo": tipo, "descricao": descricao, "valor_centavos": valor, "data": dia})}')
     return {"ok": True}
+
+
+def _nome_tipo(tipo):
+    return "a receita" if tipo == "receita" else "a despesa"
+
+
+def _resumo(lancamento):
+    """"Conta de luz" (despesa de R$ 312,40 em 05/10/2026)"""
+    return (f'"{lancamento["descricao"]}" ({lancamento["tipo"]} de {historico.reais(lancamento["valor_centavos"])} '
+            f'em {historico.data_br(lancamento["data"])})')
 
 
 def _apagar_arquivo(req, nome):
     if nome:
-        (req.pasta_arquivos / "contas" / nome).unlink(missing_ok=True)
+        db.apagar_arquivo(req.conn, f"contas/{nome}")
 
 
 @rota("DELETE", "/api/condominios/{cid:int}/contas/{lid:int}")
@@ -161,6 +175,7 @@ def excluir_lancamento(req, cid, lid):
     linha = _lancamento(req, cid, lid)
     req.conn.execute("DELETE FROM lancamentos WHERE id = ?", (lid,))
     _apagar_arquivo(req, linha["comprovante"])
+    historico.anotar(req, cid, f'Excluiu o lançamento {_resumo(linha)}')
     return {"ok": True}
 
 
@@ -173,13 +188,13 @@ def anexar_comprovante(req, cid, lid):
         raise ErroHTTP(400, "Envie a foto do comprovante.")
     tipo, extensao = _tipo_imagem(req.bruto)
     nome = secrets.token_hex(16) + extensao
-    pasta = req.pasta_arquivos / "contas"
-    pasta.mkdir(parents=True, exist_ok=True)
-    (pasta / nome).write_bytes(req.bruto)
+    db.salvar_arquivo(req.conn, f"contas/{nome}", req.bruto)
     req.conn.execute(
         "UPDATE lancamentos SET comprovante = ?, comprovante_tipo = ? WHERE id = ?", (nome, tipo, lid)
     )
     _apagar_arquivo(req, linha["comprovante"])
+    acao = "Trocou o comprovante" if linha["comprovante"] else "Anexou comprovante"
+    historico.anotar(req, cid, f'{acao} do lançamento {_resumo(linha)}')
     return 201, {"ok": True}
 
 
@@ -189,6 +204,7 @@ def remover_comprovante(req, cid, lid):
     linha = _lancamento(req, cid, lid)
     req.conn.execute("UPDATE lancamentos SET comprovante = NULL, comprovante_tipo = NULL WHERE id = ?", (lid,))
     _apagar_arquivo(req, linha["comprovante"])
+    historico.anotar(req, cid, f'Removeu o comprovante do lançamento {_resumo(linha)}')
     return {"ok": True}
 
 
@@ -196,7 +212,7 @@ def remover_comprovante(req, cid, lid):
 def ver_comprovante(req, cid, lid):
     exigir_membro(req, cid, papeis=PODEM_VER)
     linha = _lancamento(req, cid, lid)
-    caminho = req.pasta_arquivos / "contas" / (linha["comprovante"] or "")
-    if not linha["comprovante"] or not caminho.is_file():
+    conteudo = db.ler_arquivo(req.conn, f"contas/{linha['comprovante']}") if linha["comprovante"] else None
+    if conteudo is None:
         raise ErroHTTP(404, "Comprovante não encontrado.")
-    return Arquivo(caminho.read_bytes(), linha["comprovante_tipo"])
+    return Arquivo(conteudo, linha["comprovante_tipo"])

@@ -1,5 +1,6 @@
 """Servidor de teste numa porta livre e clientes HTTP com cookie de sessão."""
 import json
+import os
 import tempfile
 import threading
 import unittest
@@ -8,7 +9,15 @@ import urllib.request
 from http.cookiejar import CookieJar
 from pathlib import Path
 
+from backend import auth
 from backend.servidor import Manipulador, criar_servidor
+from tests.turso_falso import TursoFalso
+
+# Com MEU_PREDIO_TESTE_TURSO=1, os testes usam o banco "na nuvem" (um Turso falso local).
+USAR_TURSO = os.environ.get("MEU_PREDIO_TESTE_TURSO") == "1"
+
+# Embaralhar senhas é lento de propósito; nos testes, que criam centenas de contas, basta pouco.
+auth.ITERACOES = 1_000
 
 
 class Cliente:
@@ -46,7 +55,12 @@ class BaseApi(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.pasta = tempfile.TemporaryDirectory()
-        cls.servidor = criar_servidor("127.0.0.1", 0, str(Path(cls.pasta.name) / "teste.db"))
+        cls.arquivo_db = str(Path(cls.pasta.name) / "teste.db")  # o arquivo SQLite, para conferir direto
+        cls.turso = None
+        if USAR_TURSO:
+            cls.turso = TursoFalso(cls.arquivo_db)
+            threading.Thread(target=cls.turso.serve_forever, daemon=True).start()
+        cls.servidor = criar_servidor("127.0.0.1", 0, cls.turso.url if cls.turso else cls.arquivo_db)
         cls.base = f"http://127.0.0.1:{cls.servidor.server_address[1]}"
         Manipulador.log_request = lambda *args, **kwargs: None  # só erros aparecem na saída
         threading.Thread(target=cls.servidor.serve_forever, daemon=True).start()
@@ -55,6 +69,9 @@ class BaseApi(unittest.TestCase):
     def tearDownClass(cls):
         cls.servidor.shutdown()
         cls.servidor.server_close()
+        if cls.turso:
+            cls.turso.shutdown()
+            cls.turso.server_close()
         cls.pasta.cleanup()
 
     _contador = 0
@@ -63,7 +80,7 @@ class BaseApi(unittest.TestCase):
         BaseApi._contador += 1
         cliente = Cliente(self.base)
         status, _ = cliente.post("/api/auth/cadastro", {
-            "nome": nome, "email": f"pessoa{BaseApi._contador}@exemplo.com", "senha": "senha-segura",
+            "nome": nome, "email": f"pessoa{BaseApi._contador}@exemplo.com", "senha": "senha-segura", "aceito_termos": True,
         })
         self.assertEqual(status, 201)
         return cliente

@@ -2,7 +2,7 @@ import { del, get, patch, post } from '../api.js';
 import { carregarUsuario, estado, limparSessao, navegar, recarregar } from '../estado.js';
 import { pararVerificacao, pedirPermissao, suportaNotificacoes } from '../notificacoes.js';
 import {
-  aoEnviar, avatar, cabecalho, campo, comErro, confirmar, erroForm, h, icone, item, linkTelefone, mascaraTelefone, NOMES_PAPEL,
+  aoEnviar, avatar, cabecalho, campo, campoSenha, comErro, confirmar, erroForm, h, icone, item, linkTelefone, mascaraTelefone, NOMES_PAPEL,
   pill, secao, tile, toast,
 } from '../ui.js';
 
@@ -36,7 +36,8 @@ export async function telaPerfil() {
     membro && secao('Notificações', cartaoNotificacoes()),
     estado.pedidoInstalacao && cartaoInstalar(),
     sindico && secao('Condomínio', formCondominio(condominio)),
-    secao('Conta', cartaoConta()));
+    secao('Conta', cartaoConta()),
+    secao('Privacidade', cartaoPrivacidade()));
 }
 
 function formDados() {
@@ -164,4 +165,47 @@ function cartaoConta() {
     item({ inicio: tile('celular', 'visitas'), titulo: 'Abrir no celular', sub: 'QR Code para testar no celular pela rede Wi-Fi', href: '#/celular' }),
     membro && item({ inicio: tile('sair', 'neutra'), titulo: 'Sair deste condomínio', onclick: sairDoCondominio, seta: false }),
     item({ inicio: tile('sair', 'ocorrencias'), titulo: 'Sair da conta', onclick: comErro(sairDaConta), seta: false }));
+}
+
+async function baixarMeusDados() {
+  const dados = await get('/api/eu/dados', { fresco: true });
+  const arquivo = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
+  const link = h('a', { href: URL.createObjectURL(arquivo), download: 'meus-dados-meu-predio.json' });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+}
+
+/** Pede a senha antes de excluir. Se for o único síndico, o servidor explica o que fazer antes. */
+function excluirConta() {
+  const form = h('form', { class: 'pilha' },
+    h('div', { class: 'pilha-curta' },
+      h('h2', {}, 'Excluir sua conta?'),
+      h('p', { class: 'mudo' }, 'Seus dados pessoais serão apagados e não dá para desfazer. Avisos, ocorrências e a prestação de contas continuam com o condomínio, sem o seu nome.')),
+    campoSenha('Digite sua senha para confirmar', { name: 'senha', autocomplete: 'current-password', required: true }),
+    erroForm(),
+    h('div', { class: 'acoes dividir' },
+      h('button', { class: 'botao', type: 'button', onclick: () => dialogo.close() }, 'Voltar'),
+      h('button', { class: 'botao perigo', type: 'submit' }, 'Excluir conta')));
+  const dialogo = h('dialog', { class: 'dialogo' }, form);
+  aoEnviar(form, async (dados) => {
+    await post('/api/eu/excluir', dados);
+    dialogo.close();
+    limparSessao();
+    pararVerificacao();
+    toast('Sua conta foi excluída.');
+    navegar('entrar');
+  });
+  dialogo.addEventListener('close', () => dialogo.remove());
+  document.body.append(dialogo);
+  dialogo.showModal();
+}
+
+function cartaoPrivacidade() {
+  return h('div', { class: 'cartao lista' },
+    item({ inicio: tile('baixar', 'neutra'), titulo: 'Baixar meus dados', sub: 'Uma cópia de tudo o que está ligado à sua conta', onclick: comErro(baixarMeusDados), seta: false }),
+    item({ inicio: tile('documento', 'neutra'), titulo: 'Termos de uso', href: '#/termos' }),
+    item({ inicio: tile('seguranca', 'neutra'), titulo: 'Política de privacidade', href: '#/privacidade' }),
+    item({ inicio: tile('lixo', 'ocorrencias'), titulo: 'Excluir minha conta', onclick: excluirConta, seta: false }));
 }

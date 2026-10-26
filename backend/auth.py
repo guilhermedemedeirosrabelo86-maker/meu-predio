@@ -3,7 +3,7 @@ import hashlib
 import hmac
 import secrets
 
-ITERACOES = 200_000
+ITERACOES = 600_000  # recomendação da OWASP para PBKDF2-SHA256
 ALFABETO_CONVITE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # sem 0/O e 1/I, que confundem
 
 
@@ -17,6 +17,11 @@ def conferir_senha(senha, armazenado):
     _, iteracoes, sal, chave = armazenado.split("$")
     calculada = hashlib.pbkdf2_hmac("sha256", senha.encode(), bytes.fromhex(sal), int(iteracoes))
     return hmac.compare_digest(calculada.hex(), chave)
+
+
+def precisa_refazer(armazenado):
+    """Senhas guardadas com menos repetições que o atual são refeitas no próximo login."""
+    return int(armazenado.split("$")[1]) < ITERACOES
 
 
 def novo_token():

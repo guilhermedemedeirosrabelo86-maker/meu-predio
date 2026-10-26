@@ -1,4 +1,5 @@
 """Enquetes: o síndico pergunta, cada unidade vota uma vez e todos veem o resultado."""
+from . import historico
 from .comum import data_iso, exigir_membro, hoje, inteiro, texto
 from .web import ErroHTTP, rota
 
@@ -111,16 +112,18 @@ def votar(req, cid, eid):
 @rota("POST", "/api/condominios/{cid:int}/enquetes/{eid:int}/encerrar")
 def encerrar_enquete(req, cid, eid):
     exigir_membro(req, cid, sindico=True)
-    _enquete(req.conn, cid, eid)
+    enquete = _enquete(req.conn, cid, eid)
     req.conn.execute("UPDATE enquetes SET encerrada = 1 WHERE id = ?", (eid,))
+    historico.anotar(req, cid, f'Encerrou a enquete "{enquete["pergunta"]}"')
     return {"ok": True}
 
 
 @rota("DELETE", "/api/condominios/{cid:int}/enquetes/{eid:int}")
 def excluir_enquete(req, cid, eid):
     exigir_membro(req, cid, sindico=True)
-    _enquete(req.conn, cid, eid)
+    enquete = _enquete(req.conn, cid, eid)
     req.conn.execute("DELETE FROM enquetes WHERE id = ?", (eid,))
+    historico.anotar(req, cid, f'Excluiu a enquete "{enquete["pergunta"]}"')
     return {"ok": True}
 
 

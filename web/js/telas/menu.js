@@ -25,6 +25,7 @@ export function telaMenu() {
     papel !== 'portaria' && ['enquetes', 'enquetes', 'neutra', 'Enquetes', sindico ? 'Pergunte e veja o resultado da votação' : 'Vote nas decisões do condomínio'],
     ['telefones', 'telefones', 'neutra', 'Telefones úteis', 'Zelador, prestadores e serviços'],
     membro.unidade_id && ['unidade', 'carro', 'unidade', 'Minha unidade', 'Veículos cadastrados'],
+    sindico && ['historico', 'relogio', 'neutra', 'Histórico', 'Quem fez o quê: contas, taxas e moradores'],
   ].filter(Boolean);
 
   return h('div', { class: 'pagina estreita' },

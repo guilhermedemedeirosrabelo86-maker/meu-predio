@@ -1,0 +1,4 @@
+dados/
+tests/
+*.bat
+__pycache__/

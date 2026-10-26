@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "web",
+  "crons": [{ "path": "/api/sistema/limpeza", "schedule": "0 6 * * *" }],
+  "rewrites": [{ "source": "/api/(.*)", "destination": "/api/index" }],
+  "functions": {
+    "api/index.py": { "includeFiles": "backend/**/*.py", "maxDuration": 30 }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "same-origin" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'" }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+    }
+  ]
+}

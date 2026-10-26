@@ -13,8 +13,12 @@ import { telaEncomendas } from './telas/encomendas.js';
 import { telaEnquetes, telaNovaEnquete } from './telas/enquetes.js';
 import { telaTelefones } from './telas/telefones.js';
 import { telaCelular } from './telas/celular.js';
-import { telaCriarConta, telaEntrar } from './telas/conta.js';
+import {
+  telaCriarConta, telaEntrar, telaEsqueci, telaNovaSenha,
+} from './telas/conta.js';
+import { telaHistorico } from './telas/historico.js';
 import { telaInicio } from './telas/inicio.js';
+import { telaPrivacidade, telaTermos } from './telas/legal.js';
 import { telaMenu } from './telas/menu.js';
 import { telaMoradores } from './telas/moradores.js';
 import { telaNovaOcorrencia, telaOcorrencia, telaOcorrencias } from './telas/ocorrencias.js';
@@ -33,8 +37,12 @@ const EQUIPE = ['sindico', 'portaria'];
 const ROTAS = [
   { padrao: 'entrar', tela: telaEntrar, publico: true },
   { padrao: 'criar-conta', tela: telaCriarConta, publico: true },
+  { padrao: 'esqueci', tela: telaEsqueci, publico: true },
+  { padrao: 'nova-senha/:token', tela: telaNovaSenha, publico: true },
   { padrao: 'passe/:token', tela: telaPasse, aberta: true },
   { padrao: 'celular', tela: telaCelular, aberta: true },
+  { padrao: 'termos', tela: telaTermos, aberta: true },
+  { padrao: 'privacidade', tela: telaPrivacidade, aberta: true },
   { padrao: 'condominios', tela: telaCondominios },
   { padrao: 'novo-condominio', tela: telaNovoCondominio },
   { padrao: 'convite', tela: telaConvite },
@@ -71,6 +79,7 @@ const ROTAS = [
   { padrao: 'enquetes', tela: telaEnquetes, condominio: true, papeis: MORADOR_E_SINDICO, aba: 'enquetes' },
   { padrao: 'enquetes/nova', tela: telaNovaEnquete, condominio: true, papeis: ['sindico'], aba: 'enquetes' },
   { padrao: 'telefones', tela: telaTelefones, condominio: true, aba: 'telefones' },
+  { padrao: 'historico', tela: telaHistorico, condominio: true, papeis: ['sindico'], aba: 'historico' },
 ];
 
 // Navegação. A barra de baixo (celular) mostra o que cada perfil mais usa; o resto fica na grade do Início
@@ -89,7 +98,7 @@ const NAVEGACAO = {
     { id: 'ocorrencias', rotulo: 'Ocorrências', celular: false }, { id: 'visitas', rotulo: 'Visitas', celular: false },
     { id: 'portaria', rotulo: 'Portaria', celular: false }, { id: 'encomendas', rotulo: 'Encomendas', celular: false },
     { id: 'enquetes', rotulo: 'Enquetes', celular: false }, { id: 'telefones', rotulo: 'Telefones úteis', celular: false },
-    { id: 'menu', rotulo: 'Mais', computador: false },
+    { id: 'historico', rotulo: 'Histórico', celular: false }, { id: 'menu', rotulo: 'Mais', computador: false },
   ],
   portaria: [
     { id: 'portaria', rotulo: 'Portaria' }, { id: 'encomendas', rotulo: 'Encomendas' }, { id: 'avisos', rotulo: 'Avisos' },
@@ -341,7 +350,7 @@ function criarMoldura(chave) {
       href: `#/${item.id}`,
       'data-aba': item.id,
     },
-    h('span', { class: 'nav-icone' }, icone(item.id === 'encomendas' ? 'pacote' : item.id)),
+    h('span', { class: 'nav-icone' }, icone({ encomendas: 'pacote', historico: 'relogio' }[item.id] || item.id)),
     h('span', {}, item.rotulo),
     item.id === 'avisos' && h('span', { class: 'nav-contador', id: 'contador-avisos', hidden: !estado.naoLidos },
       estado.naoLidos > 9 ? '9+' : estado.naoLidos))),

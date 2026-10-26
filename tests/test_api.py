@@ -13,6 +13,8 @@ class TesteApi(BaseApi):
         cliente = Cliente(self.base)
         self.assertEqual(cliente.get("/api/eu")[0], 401)
         corpo = {"nome": "Carla", "email": "Carla@Exemplo.com", "senha": "12345678"}
+        self.assertEqual(cliente.post("/api/auth/cadastro", corpo)[0], 400)  # sem aceitar os termos
+        corpo["aceito_termos"] = True
         self.assertEqual(cliente.post("/api/auth/cadastro", corpo)[0], 201)
         self.assertEqual(cliente.post("/api/auth/cadastro", corpo)[0], 409)
         self.assertEqual(cliente.get("/api/eu")[1]["usuario"]["email"], "carla@exemplo.com")

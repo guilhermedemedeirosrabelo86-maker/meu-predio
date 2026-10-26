@@ -626,6 +626,9 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 @keyframes abertura-sair { 40% { opacity: 1; } to { opacity: 0; } }
 @keyframes pulsar { 50% { transform: scale(0.94); } }
 
+/* Termos e privacidade */
+.legal { padding-top: 24px; }
+
 /* --- Entrada (login), passe público e celular ---------------------------- */
 
 .tela-acesso {

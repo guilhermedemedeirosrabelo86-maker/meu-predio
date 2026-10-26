@@ -20,7 +20,7 @@ class TesteTaxas(BaseApi):
     def preparar(self, configurar=True):
         """Condomínio no app desde agosto, com taxa de R$ 350 vencendo no dia 10."""
         sindico, morador, cid, _ = self.condominio_com_morador()
-        conn = sqlite3.connect(self.servidor.caminho_db)
+        conn = sqlite3.connect(self.arquivo_db)
         with conn:
             conn.execute("UPDATE condominios SET criado_em = '2026-08-03 12:00:00' WHERE id = ?", (cid,))
         conn.close()

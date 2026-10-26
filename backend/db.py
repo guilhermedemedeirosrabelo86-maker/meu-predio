@@ -1,5 +1,9 @@
-"""Banco de dados SQLite: conexão e esquema."""
+"""Banco de dados SQLite: conexão e esquema. No computador é um arquivo; hospedado, é o Turso."""
+import os
 import sqlite3
+from pathlib import Path
+
+from . import db_remoto
 
 # Definida à parte porque a migração recria esta tabela (o papel 'portaria' entrou depois).
 MEMBROS = """
@@ -22,7 +26,8 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email       TEXT NOT NULL UNIQUE COLLATE NOCASE,
     telefone    TEXT NOT NULL DEFAULT '',
     senha_hash  TEXT NOT NULL,
-    criado_em   TEXT NOT NULL DEFAULT (datetime('now'))
+    criado_em   TEXT NOT NULL DEFAULT (datetime('now')),
+    termos_aceitos_em TEXT  -- quando aceitou os termos de uso e a política de privacidade
 );
 
 CREATE TABLE IF NOT EXISTS sessoes (
@@ -240,6 +245,38 @@ CREATE TABLE IF NOT EXISTS enquete_votos (
     PRIMARY KEY (enquete_id, unidade_id)
 );
 
+-- Fotos e comprovantes. O nome tem a pasta de origem, como "contas/9f2c....jpg".
+CREATE TABLE IF NOT EXISTS arquivos (
+    nome        TEXT PRIMARY KEY,
+    conteudo    BLOB NOT NULL
+);
+
+-- Histórico de ações do síndico (ver historico.py). O autor fica em texto para sobreviver à exclusão da conta.
+CREATE TABLE IF NOT EXISTS historico (
+    id              INTEGER PRIMARY KEY,
+    condominio_id   INTEGER NOT NULL REFERENCES condominios(id) ON DELETE CASCADE,
+    usuario_id      INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    autor           TEXT NOT NULL,
+    texto           TEXT NOT NULL,
+    criado_em       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_historico ON historico (condominio_id, id);
+
+-- Links de "esqueci minha senha": valem uma vez e por pouco tempo. Só o hash do token fica guardado.
+CREATE TABLE IF NOT EXISTS recuperacoes (
+    token_hash  TEXT PRIMARY KEY,
+    usuario_id  INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    expira_em   TEXT NOT NULL
+);
+
+-- Erros de login e de código de convite, para o limite de tentativas (ver limites.py).
+CREATE TABLE IF NOT EXISTS tentativas (
+    chave       TEXT NOT NULL,
+    criado_em   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_tentativas ON tentativas (chave, criado_em);
 CREATE INDEX IF NOT EXISTS idx_encomendas_condominio ON encomendas (condominio_id, retirada_em);
 CREATE INDEX IF NOT EXISTS idx_encomendas_unidade ON encomendas (unidade_id, retirada_em);
 CREATE INDEX IF NOT EXISTS idx_enquetes_condominio ON enquetes (condominio_id, encerrada);
@@ -255,6 +292,9 @@ CREATE INDEX IF NOT EXISTS idx_lancamentos_condominio ON lancamentos (condominio
 
 
 def conectar(caminho):
+    """Um caminho de arquivo abre o SQLite local; um endereço (libsql://...) abre o banco no Turso."""
+    if db_remoto.eh_remoto(caminho):
+        return db_remoto.conectar(caminho, os.environ.get("TURSO_AUTH_TOKEN"))
     conn = sqlite3.connect(caminho, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -264,12 +304,32 @@ def conectar(caminho):
 def inicializar(caminho):
     conn = conectar(caminho)
     try:
-        conn.execute("PRAGMA journal_mode = WAL")
+        if not db_remoto.eh_remoto(caminho):
+            conn.execute("PRAGMA journal_mode = WAL")
         conn.executescript(ESQUEMA)
         _migrar(conn)
         conn.commit()
+        if not db_remoto.eh_remoto(caminho):
+            _importar_pasta_de_arquivos(conn, Path(caminho).resolve().parent / "arquivos")
     finally:
         conn.close()
+
+
+def _importar_pasta_de_arquivos(conn, pasta):
+    """Versões anteriores guardavam fotos e comprovantes em dados/arquivos/. Elas passam para o
+    banco e a pasta é renomeada para arquivos-importados (nada é apagado)."""
+    if not pasta.is_dir():
+        return
+    for arquivo in pasta.glob("*/*"):
+        if arquivo.is_file():
+            conn.execute(
+                "INSERT OR IGNORE INTO arquivos (nome, conteudo) VALUES (?, ?)",
+                (f"{arquivo.parent.name}/{arquivo.name}", arquivo.read_bytes()),
+            )
+    conn.commit()
+    destino = pasta.with_name("arquivos-importados")
+    if not destino.exists():
+        pasta.rename(destino)
 
 
 def _migrar(conn):
@@ -297,3 +357,20 @@ def _migrar(conn):
     if "taxa_centavos" not in colunas:
         conn.execute("ALTER TABLE condominios ADD COLUMN taxa_centavos INTEGER NOT NULL DEFAULT 0")
         conn.execute("ALTER TABLE condominios ADD COLUMN taxa_vencimento INTEGER NOT NULL DEFAULT 10")
+
+    colunas = {linha["name"] for linha in conn.execute("PRAGMA table_info(usuarios)")}
+    if "termos_aceitos_em" not in colunas:
+        conn.execute("ALTER TABLE usuarios ADD COLUMN termos_aceitos_em TEXT")
+
+
+def salvar_arquivo(conn, nome, conteudo):
+    conn.execute("INSERT OR REPLACE INTO arquivos (nome, conteudo) VALUES (?, ?)", (nome, conteudo))
+
+
+def ler_arquivo(conn, nome):
+    linha = conn.execute("SELECT conteudo FROM arquivos WHERE nome = ?", (nome,)).fetchone()
+    return bytes(linha[0]) if linha else None
+
+
+def apagar_arquivo(conn, nome):
+    conn.execute("DELETE FROM arquivos WHERE nome = ?", (nome,))

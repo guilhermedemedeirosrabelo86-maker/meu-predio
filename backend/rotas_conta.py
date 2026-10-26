@@ -1,7 +1,8 @@
 """Cadastro, login, perfil e contatos de emergência."""
 import sqlite3
+import sys
 
-from . import auth
+from . import auth, correio, limites
 from .comum import EMAIL_RE, exigir_login, texto, usuario_publico
 from .web import ErroHTTP, rota
 
@@ -35,9 +36,11 @@ def cadastrar(req):
         raise ErroHTTP(400, "Informe um e-mail válido.")
     senha = _senha(req.corpo)
     telefone = texto(req.corpo, "telefone", "Telefone", obrigatorio=False, maximo=30)
+    if req.corpo.get("aceito_termos") is not True:
+        raise ErroHTTP(400, "Para criar a conta, aceite os termos de uso e a política de privacidade.")
     try:
         cursor = req.conn.execute(
-            "INSERT INTO usuarios (nome, email, telefone, senha_hash) VALUES (?, ?, ?, ?)",
+            "INSERT INTO usuarios (nome, email, telefone, senha_hash, termos_aceitos_em) VALUES (?, ?, ?, ?, datetime('now'))",
             (nome, email, telefone, auth.hash_senha(senha)),
         )
     except sqlite3.IntegrityError:
@@ -53,9 +56,16 @@ def entrar(req):
     senha = req.corpo.get("senha")
     if not isinstance(senha, str) or not senha:
         raise ErroHTTP(400, 'Preencha o campo "Senha".')
+    chave_email, chave_ip = f"login:{email}", f"login-ip:{req.ip}"
+    limites.conferir(req.conn, chave_email, limites.LOGIN_POR_EMAIL)
+    limites.conferir(req.conn, chave_ip, limites.LOGIN_POR_IP)
     usuario = req.conn.execute("SELECT * FROM usuarios WHERE email = ?", (email,)).fetchone()
     if usuario is None or not auth.conferir_senha(senha, usuario["senha_hash"]):
+        limites.registrar(req.conn, chave_email, chave_ip)
         raise ErroHTTP(401, "E-mail ou senha incorretos.")
+    limites.esquecer(req.conn, chave_email)
+    if auth.precisa_refazer(usuario["senha_hash"]):  # senha guardada com a força antiga
+        req.conn.execute("UPDATE usuarios SET senha_hash = ? WHERE id = ?", (auth.hash_senha(senha), usuario["id"]))
     req.conn.execute("DELETE FROM sessoes WHERE expira_em <= datetime('now')")
     _abrir_sessao(req, usuario["id"])
     return {"usuario": usuario_publico(usuario)}
@@ -134,3 +144,65 @@ def remover_contato(req, contato_id):
     if cursor.rowcount == 0:
         raise ErroHTTP(404, "Contato não encontrado.")
     return {"ok": True}
+
+
+# --- Esqueci minha senha ----------------------------------------------------
+
+VALIDADE_LINK_MINUTOS = 60
+RESPOSTA_ESQUECI = "Se houver uma conta com este e-mail, enviamos um link para criar uma nova senha."
+
+
+@rota("POST", "/api/auth/esqueci")
+def esqueci_senha(req):
+    """A resposta é a mesma exista ou não a conta, para não revelar quem usa o app."""
+    email = texto(req.corpo, "email", "E-mail", maximo=254).lower()
+    chave_email, chave_ip = f"esqueci:{email}", f"esqueci-ip:{req.ip}"
+    limites.conferir(req.conn, chave_email, limites.ESQUECI_POR_EMAIL)
+    limites.conferir(req.conn, chave_ip, limites.ESQUECI_POR_IP)
+    limites.registrar(req.conn, chave_email, chave_ip)
+    usuario = req.conn.execute("SELECT id, nome FROM usuarios WHERE email = ?", (email,)).fetchone()
+    if usuario is None:
+        return {"mensagem": RESPOSTA_ESQUECI}
+    token = auth.novo_token()
+    req.conn.execute("DELETE FROM recuperacoes WHERE usuario_id = ? OR expira_em <= datetime('now')", (usuario["id"],))
+    req.conn.execute(
+        "INSERT INTO recuperacoes (token_hash, usuario_id, expira_em) VALUES (?, ?, datetime('now', ?))",
+        (auth.hash_token(token), usuario["id"], f"+{VALIDADE_LINK_MINUTOS} minutes"),
+    )
+    req.conn.commit()  # o link só sai por e-mail se já estiver guardado
+    link = f"{req.endereco}/#/nova-senha/{token}"
+    try:
+        correio.enviar(email, "Criar uma nova senha no Meu Prédio", (
+            f"Olá, {usuario['nome'].split(' ')[0]}!\n\n"
+            f"Para criar uma nova senha, abra o link abaixo. Ele vale por {VALIDADE_LINK_MINUTOS} minutos e só uma vez.\n\n"
+            f"{link}\n\n"
+            "Se não foi você que pediu, ignore este e-mail: sua senha continua a mesma."
+        ))
+    except correio.ErroEnvio as erro:
+        print(f"Falha ao enviar e-mail de nova senha: {erro}", file=sys.stderr, flush=True)
+        raise ErroHTTP(503, "Não conseguimos enviar o e-mail agora. Tente de novo em alguns minutos.")
+    return {"mensagem": RESPOSTA_ESQUECI}
+
+
+@rota("POST", "/api/auth/nova-senha")
+def nova_senha(req):
+    token = texto(req.corpo, "token", "Link", maximo=100)
+    senha = _senha(req.corpo)
+    chave_ip = f"link-ip:{req.ip}"
+    limites.conferir(req.conn, chave_ip, limites.LINK_INVALIDO_POR_IP)
+    pedido = req.conn.execute(
+        "SELECT usuario_id FROM recuperacoes WHERE token_hash = ? AND expira_em > datetime('now')",
+        (auth.hash_token(token),),
+    ).fetchone()
+    if pedido is None:
+        limites.registrar(req.conn, chave_ip)
+        raise ErroHTTP(400, 'Este link venceu ou já foi usado. Peça outro em "Esqueci minha senha".')
+    usuario_id = pedido["usuario_id"]
+    req.conn.execute("UPDATE usuarios SET senha_hash = ? WHERE id = ?", (auth.hash_senha(senha), usuario_id))
+    req.conn.execute("DELETE FROM recuperacoes WHERE usuario_id = ?", (usuario_id,))
+    req.conn.execute("DELETE FROM sessoes WHERE usuario_id = ?", (usuario_id,))  # sai de todos os aparelhos
+    email = req.conn.execute("SELECT email FROM usuarios WHERE id = ?", (usuario_id,)).fetchone()["email"]
+    limites.esquecer(req.conn, f"login:{email}")
+    _abrir_sessao(req, usuario_id)
+    usuario = req.conn.execute("SELECT * FROM usuarios WHERE id = ?", (usuario_id,)).fetchone()
+    return {"usuario": usuario_publico(usuario)}
