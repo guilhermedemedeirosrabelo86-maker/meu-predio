@@ -5,7 +5,7 @@ import { cabecalho, h, secao } from '../ui.js';
 const RESPONSAVEL = {
   nome: '[nome da empresa ou seu nome]',
   documento: '[CNPJ ou CPF]',
-  email: '[e-mail para assuntos de privacidade]',
+  email: 'guilhermedemedeirosrabelo86@gmail.com',
 };
 const ATUALIZADO_EM = '26/10/2026';
 

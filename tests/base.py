@@ -9,7 +9,7 @@ import urllib.request
 from http.cookiejar import CookieJar
 from pathlib import Path
 
-from backend import auth
+from backend import auth, limites
 from backend.servidor import Manipulador, criar_servidor
 from tests.turso_falso import TursoFalso
 
@@ -18,6 +18,7 @@ USAR_TURSO = os.environ.get("MEU_PREDIO_TESTE_TURSO") == "1"
 
 # Embaralhar senhas é lento de propósito; nos testes, que criam centenas de contas, basta pouco.
 auth.ITERACOES = 1_000
+limites.CADASTRO_POR_IP = 100_000  # os testes criam centenas de contas do mesmo endereço
 
 
 class Cliente:

@@ -2,3 +2,4 @@ dados/
 tests/
 *.bat
 __pycache__/
+backup.py

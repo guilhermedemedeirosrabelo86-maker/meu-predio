@@ -50,13 +50,20 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   No "Mais" do celular aparece a soma das abas que só existem lá.
 - **Segurança/LGPD prontos:** limite de tentativas, PBKDF2 600 mil, esqueci minha senha, histórico do síndico,
   aceite dos termos, baixar meus dados, excluir conta, limpeza diária (cron da Vercel às 06:00 UTC).
-- **Termos e privacidade são rascunho:** faltam os dados da empresa (entre `[colchetes]`
+- **Termos e privacidade são rascunho:** e-mail de contato preenchido; faltam nome, CPF/CNPJ e cidade (entre `[colchetes]`
   no início de `web/js/telas/legal.js`) e revisão de um advogado antes de vender.
+- **Backup:** `backup.bat` / `python backup.py` copia o Turso para `dados/backups/`; `python backup.py restaurar`
+  só aceita banco vazio. Primeiro backup real feito em 2026-10-26 (50 linhas, 27 tabelas; abriu com o código do
+  app: 3 contas, 2 condomínios). Credenciais locais em `dados/turso.json` (fora do Git). Rodar toda semana.
+- **Revisão de segurança (2026-10-26):** todas as rotas conferidas — isolamento por condomínio, papel exigido
+  e posse dos itens (veículo, reserva, visita etc.). Corrigido: `/api/rede` sem endereços na Vercel, limite de
+  cadastro por endereço, "Trocar senha" no Perfil. Sem `innerHTML` no frontend.
 - **Dados locais x produção:** o banco do computador não foi copiado para a produção; a produção começou vazia.
 
 ## Próximos passos (atualize sempre)
 
-1. Configurar o Resend (e-mail de "esqueci minha senha") — o usuário precisa criar a conta.
+1. Configurar o Resend (e-mail de "esqueci minha senha") — o usuário precisa criar a conta e, para enviar a
+   qualquer pessoa, um domínio próprio (ex.: registro.br) com os registros DNS do Resend. Explicado em 2026-10-26.
 2. Esconder "Abrir no celular" do Perfil na versão hospedada (só faz sentido na rede local).
 3. Antes de cobrar: migrar o banco para Postgres (Neon ou Supabase, região São Paulo) e as fotos para
    um armazenamento de arquivos (Vercel Blob ou Supabase Storage).
@@ -110,11 +117,15 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   Não baixe a letra dos campos.
 - **Cache das telas (`web/js/api.js`):** `get(..., { fresco: true })` atualiza o cache mas **não** redesenha a tela;
   para buscar de novo e redesenhar se mudou, use `revalidar(caminho)`.
+- **Token do Turso colado duas vezes:** o campo de senha não mostra o que se cola; o usuário colou o token em
+  dobro (5 partes em vez de 3) e o Turso respondeu "JWT error: Base64 error". `limpar_token` em backup.py corrige.
 - **Testes:** `tests/base.py` baixa `auth.ITERACOES` para os testes ficarem rápidos; o cadastro exige
   `"aceito_termos": true`.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Backup/restauração (backup.py, backup.bat), revisão de segurança rota por rota (3 correções),
+  trocar senha no Perfil, "Abrir no celular" só na rede local. Primeiro backup real feito. E-mail de contato nos termos. Commitado.
 - 2026-10-26 — Síndico envia a foto do prédio (dia e, opcional, noite) no Perfil; aparece no topo do Início
   para todos. Commitado.
 - 2026-10-26 — Foto da noite trocada por uma residência moderna (a anterior, prédio de tijolo, foi achada feia).

@@ -1,5 +1,6 @@
 """Limite de tentativas, senhas refeitas com a força atual e "esqueci minha senha"."""
 import hashlib
+import os
 import re
 import sqlite3
 from unittest import mock
@@ -126,3 +127,41 @@ class TesteNovaSenha(BaseApi):
         for _ in range(limites.ESQUECI_POR_EMAIL):
             self.pedir_link(email)
         self.assertEqual(Cliente(self.base).post("/api/auth/esqueci", {"email": email})[0], 429)
+
+
+class TesteRevisao(BaseApi):
+    """Correções da revisão de segurança de 2026-10-26."""
+
+    def setUp(self):
+        conn = sqlite3.connect(self.arquivo_db)
+        with conn:
+            conn.execute("DELETE FROM tentativas")
+        conn.close()
+
+    def test_trocar_senha(self):
+        BaseApi._contador += 1
+        email = f"troca{BaseApi._contador}@exemplo.com"
+        aparelho = Cliente(self.base)
+        aparelho.post("/api/auth/cadastro", {"nome": "Ana", "email": email, "senha": "senha-antiga", "aceito_termos": True})
+        outro = Cliente(self.base)
+        outro.post("/api/auth/login", {"email": email, "senha": "senha-antiga"})
+
+        self.assertEqual(aparelho.post("/api/eu/senha", {"senha_atual": "errada", "senha_nova": "senha-nova-1"})[0], 400)
+        self.assertEqual(aparelho.post("/api/eu/senha", {"senha_atual": "senha-antiga", "senha_nova": "curta"})[0], 400)
+        self.assertEqual(aparelho.post("/api/eu/senha", {"senha_atual": "senha-antiga", "senha_nova": "senha-nova-1"})[0], 200)
+        self.assertEqual(aparelho.get("/api/eu")[0], 200)  # este aparelho continua conectado
+        self.assertEqual(outro.get("/api/eu")[0], 401)     # os outros saem
+        self.assertEqual(Cliente(self.base).post("/api/auth/login", {"email": email, "senha": "senha-nova-1"})[0], 200)
+
+    def test_limite_de_cadastros_por_endereco(self):
+        with mock.patch.object(limites, "CADASTRO_POR_IP", 2):
+            for _ in range(2):
+                self.novo_usuario()
+            BaseApi._contador += 1
+            status, dados = Cliente(self.base).post("/api/auth/cadastro", {
+                "nome": "X", "email": f"spam{BaseApi._contador}@exemplo.com", "senha": "senha-segura", "aceito_termos": True})
+        self.assertEqual(status, 429)
+
+    def test_rede_nao_mostra_enderecos_hospedado(self):
+        with mock.patch.dict(os.environ, {"VERCEL": "1"}):
+            self.assertEqual(Cliente(self.base).get("/api/rede")[1]["enderecos"], [])

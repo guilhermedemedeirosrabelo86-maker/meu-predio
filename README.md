@@ -106,10 +106,18 @@ As tabelas são criadas sozinhas no primeiro acesso. Com HTTPS, o cookie de sess
 
 **Antes de vender:** preencha os dados da empresa no início de `web/js/telas/legal.js` (termos de uso e política de privacidade) e peça para um advogado revisar o texto.
 
+## Backup
+
+Dê dois cliques em `backup.bat` (ou `python backup.py`). Ele copia o banco inteiro do Turso, com fotos e comprovantes, para `dados/backups/backup-AAAA-MM-DD-HHMM.db`. Na primeira vez, pede o endereço e o token do banco (painel do Turso) e oferece guardá-los em `dados/turso.json`, que não vai para o GitHub.
+
+Para conferir um backup, abra o app em cima dele: `python rodar.py --banco dados/backups/ARQUIVO.db`.
+Para restaurar: crie um banco **novo e vazio** no Turso, rode `python backup.py restaurar dados/backups/ARQUIVO.db`, informe o endereço e o token do banco novo e troque `TURSO_DATABASE_URL` e `TURSO_AUTH_TOKEN` na Vercel. A restauração recusa bancos com dados, para nunca sobrescrever nada.
+
 ## Segurança e privacidade
 
 - **Senhas:** PBKDF2-SHA256 com 600 mil repetições. Senhas antigas são refeitas no próximo login.
 - **Limite de tentativas** (`backend/limites.py`): 5 senhas erradas por conta e 30 por endereço em 15 minutos; o mesmo vale para códigos de convite e para "esqueci minha senha".
+- **Trocar senha** no Perfil (pede a atual e desconecta os outros aparelhos) e limite de 20 cadastros por endereço a cada 15 minutos.
 - **Esqueci minha senha:** link por e-mail que vale 1 hora e uma vez só; trocar a senha desconecta todos os aparelhos.
 - **Histórico** (`backend/historico.py`): o que o síndico faz no dinheiro, nos moradores e nas exclusões fica registrado, sem como apagar pelo app.
 - **LGPD** (`backend/rotas_privacidade.py`): aceite dos termos no cadastro, "Baixar meus dados" e "Excluir minha conta" no Perfil, e limpeza automática de visitantes e encomendas com mais de 180 dias.

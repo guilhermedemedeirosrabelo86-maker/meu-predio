@@ -1,4 +1,5 @@
 """Informações do servidor para abrir o app no celular pela rede Wi-Fi."""
+import os
 import socket
 
 from .web import rota
@@ -25,6 +26,8 @@ def ips_locais():
 
 @rota("GET", "/api/rede")
 def rede(req):
+    if os.environ.get("VERCEL"):  # hospedado: não há rede Wi-Fi local, e os endereços internos não são da conta de ninguém
+        return {"aberto_na_rede": False, "porta": None, "enderecos": []}
     porta = INFO["porta"]
     return {
         "aberto_na_rede": INFO["host"] in ("0.0.0.0", ""),

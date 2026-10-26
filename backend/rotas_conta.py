@@ -38,6 +38,8 @@ def cadastrar(req):
     telefone = texto(req.corpo, "telefone", "Telefone", obrigatorio=False, maximo=30)
     if req.corpo.get("aceito_termos") is not True:
         raise ErroHTTP(400, "Para criar a conta, aceite os termos de uso e a política de privacidade.")
+    chave_ip = f"cadastro-ip:{req.ip}"
+    limites.conferir(req.conn, chave_ip, limites.CADASTRO_POR_IP)
     try:
         cursor = req.conn.execute(
             "INSERT INTO usuarios (nome, email, telefone, senha_hash, termos_aceitos_em) VALUES (?, ?, ?, ?, datetime('now'))",
@@ -45,6 +47,7 @@ def cadastrar(req):
         )
     except sqlite3.IntegrityError:
         raise ErroHTTP(409, "Já existe uma conta com este e-mail.")
+    limites.registrar(req.conn, chave_ip)
     _abrir_sessao(req, cursor.lastrowid)
     usuario = req.conn.execute("SELECT * FROM usuarios WHERE id = ?", (cursor.lastrowid,)).fetchone()
     return 201, {"usuario": usuario_publico(usuario)}
@@ -104,6 +107,22 @@ def alterar_eu(req):
     nome = texto(req.corpo, "nome", "Nome", maximo=100)
     telefone = texto(req.corpo, "telefone", "Telefone", obrigatorio=False, maximo=30)
     req.conn.execute("UPDATE usuarios SET nome = ?, telefone = ? WHERE id = ?", (nome, telefone, usuario["id"]))
+    return {"ok": True}
+
+
+@rota("POST", "/api/eu/senha")
+def trocar_senha(req):
+    """Troca a senha sabendo a atual. Os outros aparelhos saem da conta; este continua conectado."""
+    usuario = exigir_login(req)
+    atual = req.corpo.get("senha_atual")
+    chave = f"login:{usuario['email']}"
+    limites.conferir(req.conn, chave, limites.LOGIN_POR_EMAIL)
+    if not isinstance(atual, str) or not auth.conferir_senha(atual, usuario["senha_hash"]):
+        limites.registrar(req.conn, chave)
+        raise ErroHTTP(400, "A senha atual está incorreta.")
+    nova = _senha({"senha": req.corpo.get("senha_nova")})
+    req.conn.execute("UPDATE usuarios SET senha_hash = ? WHERE id = ?", (auth.hash_senha(nova), usuario["id"]))
+    req.conn.execute("DELETE FROM sessoes WHERE usuario_id = ? AND token_hash <> ?", (usuario["id"], req.token_hash))
     return {"ok": True}
 
 

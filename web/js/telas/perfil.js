@@ -40,7 +40,7 @@ export async function telaPerfil() {
     sindico && secao('Condomínio', formCondominio(condominio)),
     sindico && secao('Foto do prédio', cartaoFotoPredio(condominio)),
     secao('Conta', cartaoConta()),
-    secao('Privacidade', cartaoPrivacidade()));
+    secao('Privacidade e segurança', cartaoPrivacidade()));
 }
 
 function formDados() {
@@ -201,7 +201,8 @@ function cartaoConta() {
   });
   return h('div', { class: 'cartao lista' },
     item({ inicio: tile('trocar', 'neutra'), titulo: 'Trocar ou adicionar condomínio', href: '#/condominios' }),
-    item({ inicio: tile('celular', 'visitas'), titulo: 'Abrir no celular', sub: 'QR Code para testar no celular pela rede Wi-Fi', href: '#/celular' }),
+    // Só faz sentido rodando no computador (rede Wi-Fi); a versão publicada usa HTTPS e já abre em qualquer lugar.
+    location.protocol === 'http:' && item({ inicio: tile('celular', 'visitas'), titulo: 'Abrir no celular', sub: 'QR Code para testar no celular pela rede Wi-Fi', href: '#/celular' }),
     membro && item({ inicio: tile('sair', 'neutra'), titulo: 'Sair deste condomínio', onclick: sairDoCondominio, seta: false }),
     item({ inicio: tile('sair', 'ocorrencias'), titulo: 'Sair da conta', onclick: comErro(sairDaConta), seta: false }));
 }
@@ -241,8 +242,32 @@ function excluirConta() {
   dialogo.showModal();
 }
 
+/** Troca a senha sabendo a atual; os outros aparelhos saem da conta. */
+function trocarSenha() {
+  const form = h('form', { class: 'pilha' },
+    h('div', { class: 'pilha-curta' },
+      h('h2', {}, 'Trocar senha'),
+      h('p', { class: 'mudo' }, 'Por segurança, você sai da conta nos outros aparelhos; neste continua conectado.')),
+    campoSenha('Senha atual', { name: 'senha_atual', autocomplete: 'current-password', required: true }),
+    campoSenha('Nova senha', { name: 'senha_nova', autocomplete: 'new-password', required: true, minlength: 8, placeholder: 'Mínimo de 8 caracteres' }),
+    erroForm(),
+    h('div', { class: 'acoes dividir' },
+      h('button', { class: 'botao', type: 'button', onclick: () => dialogo.close() }, 'Voltar'),
+      h('button', { class: 'botao primario', type: 'submit' }, 'Salvar')));
+  const dialogo = h('dialog', { class: 'dialogo' }, form);
+  aoEnviar(form, async (dados) => {
+    await post('/api/eu/senha', dados);
+    dialogo.close();
+    toast('Senha trocada.');
+  });
+  dialogo.addEventListener('close', () => dialogo.remove());
+  document.body.append(dialogo);
+  dialogo.showModal();
+}
+
 function cartaoPrivacidade() {
   return h('div', { class: 'cartao lista' },
+    item({ inicio: tile('olho', 'neutra'), titulo: 'Trocar senha', onclick: trocarSenha, seta: false }),
     item({ inicio: tile('baixar', 'neutra'), titulo: 'Baixar meus dados', sub: 'Uma cópia de tudo o que está ligado à sua conta', onclick: comErro(baixarMeusDados), seta: false }),
     item({ inicio: tile('documento', 'neutra'), titulo: 'Termos de uso', href: '#/termos' }),
     item({ inicio: tile('seguranca', 'neutra'), titulo: 'Política de privacidade', href: '#/privacidade' }),

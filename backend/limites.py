@@ -10,6 +10,7 @@ JANELA_MINUTOS = 15
 LOGIN_POR_EMAIL = 5     # senhas erradas para a mesma conta
 LOGIN_POR_IP = 30       # senhas erradas vindas do mesmo endereço (várias contas)
 CONVITE_POR_IP = 20     # códigos de convite inexistentes
+CADASTRO_POR_IP = 20    # contas novas (folga para um prédio inteiro se cadastrar pelo mesmo Wi-Fi)
 ESQUECI_POR_EMAIL = 3   # pedidos de "esqueci minha senha" (cada um manda um e-mail)
 ESQUECI_POR_IP = 10
 LINK_INVALIDO_POR_IP = 10  # links de nova senha inválidos ou vencidos
