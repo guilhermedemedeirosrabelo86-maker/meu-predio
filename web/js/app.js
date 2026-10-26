@@ -219,7 +219,14 @@ const chaveMoldura = () => {
   return [estado.usuario.id, estado.usuario.nome, m?.membro_id, m?.papel, m?.unidade_id, m?.condominio].join('|');
 };
 
+// Saiu versão nova do app enquanto ele estava aberto: recarrega na próxima troca de tela (ver o fim do arquivo).
+let versaoNova = false;
+
 async function renderizar({ manterRolagem = false } = {}) {
+  if (versaoNova && !manterRolagem) {
+    location.reload();
+    return;
+  }
   const minhaGeracao = ++geracao;
   // Trocar de tela (inclusive pelo botão voltar) fecha fotos e confirmações abertas.
   if (!manterRolagem) document.querySelectorAll('dialog[open]').forEach((d) => d.close());
@@ -572,6 +579,18 @@ window.addEventListener('beforeinstallprompt', (evento) => {
 if ('ontouchstart' in window) instalarPuxarParaAtualizar();
 renderizar();
 
+// Instalado na tela do iPhone, o app quase nunca recarrega: ao voltar para ele, o iPhone só "acorda" a página
+// antiga. Por isso, a cada volta procuramos versão nova; quando ela assume, o app recarrega na hora se estiver em
+// segundo plano, ou na próxima troca de tela (para não perder o que a pessoa estiver digitando).
 if ('serviceWorker' in navigator) {
+  const jaTinhaVersao = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!jaTinhaVersao) return; // primeira instalação: a página aberta já é a versão atual
+    if (document.hidden) location.reload();
+    else versaoNova = true;
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) navigator.serviceWorker.getRegistration().then((r) => r?.update()).catch(() => {});
+  });
 }

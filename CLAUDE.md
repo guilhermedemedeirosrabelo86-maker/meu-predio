@@ -128,6 +128,9 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 - **Rollback em erro:** quando uma rota lança `ErroHTTP`, o servidor desfaz tudo o que ela gravou.
   O que precisa ficar gravado mesmo com erro (ex.: tentativa de login errada) precisa de `conn.commit()`
   antes do erro — ver `backend/limites.py`.
+- **App instalado no iPhone não recarrega:** voltar para ele só "acorda" a página antiga, então mudanças publicadas
+  não aparecem. `app.js` (fim do arquivo) chama `registration.update()` ao voltar e, no `controllerchange`, recarrega
+  na próxima troca de tela (`versaoNova` em `renderizar`). Sempre suba a versão `CACHE` do sw.js ao publicar.
 - **Service worker:** ao adicionar ou remover arquivos em `web/`, atualize a lista `ARQUIVOS` e suba a
   versão `CACHE` em `web/sw.js`. Um arquivo da lista que não exista quebra o modo offline inteiro.
 - **Fim de linha:** `sed -i` no Git Bash converte CRLF em LF e faz arquivos não tocados aparecerem como
@@ -145,11 +148,18 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   dobro (5 partes em vez de 3) e o Turso respondeu "JWT error: Base64 error". `limpar_token` em backup.py corrige.
 - **Altura no celular:** a barra do topo tem 60px (não 58, o `min-height`); a conta da altura mínima do conteúdo
   (prédios no pé da tela) usa 60px. Errar isso faz a tela curta rolar uns pixels à toa.
+- **iPad:** em pé (768–834px) usa o layout do celular, mas o conteúdo para em 720px; o que deve ir de ponta a
+  ponta usa `margin-inline: calc(50% - 50vw)` (com `.app { overflow-x: clip }`). Deitado (1024–1366px) usa o do
+  computador, com menu lateral. Confira os dois ao mexer no layout.
 - **Testes:** `tests/base.py` baixa `auth.ITERACOES` para os testes ficarem rápidos; o cadastro exige
   `"aceito_termos": true`.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — App se atualiza sozinho: o PWA no iPhone não recarrega ao voltar para ele (o morador não via os
+  prédios novos); agora, ao voltar, procura versão nova e recarrega na próxima troca de tela. Commitado.
+- 2026-10-26 — Ajustes no iPad: foto do Início e prédios do rodapé de ponta a ponta no iPad em pé; ações rápidas
+  sem o "+" abaixo de 1280px (iPad deitado) para o nome caber numa linha. Commitado.
 - 2026-10-26 — Prédios do fundo também no celular, no fim da tela acima da barra de baixo. Commitado.
 - 2026-10-26 — Fundo do computador: fileira de prédios em azul claro no rodapé (versão noite com janelas acesas);
   nome do condomínio alinhado nas telas estreitas. Commitado.

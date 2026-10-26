@@ -677,8 +677,9 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 /* Foto do condomínio de borda a borda, passando por baixo da barra do topo (que fica transparente) */
 .hero-foto {
   position: relative;
-  margin: calc(-58px - env(safe-area-inset-top)) -16px 0;
-  padding: calc(84px + env(safe-area-inset-top)) 20px 64px;
+  /* calc(50% - 50vw): vai de ponta a ponta da tela mesmo quando o conteúdo é mais estreito (iPad em pé) */
+  margin: calc(-58px - env(safe-area-inset-top)) calc(50% - 50vw) 0;
+  padding: calc(84px + env(safe-area-inset-top)) calc(50vw - 50% + 4px) 64px;
   min-height: calc(310px + env(safe-area-inset-top));
   display: flex;
   flex-direction: column;
@@ -707,6 +708,7 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 /* Celular: a fileira de prédios do computador vira o fim da tela, logo acima da barra de baixo. Em telas curtas
    ela desce até o pé (a área de conteúdo ocupa a altura toda); nas compridas, aparece ao rolar até o fim. */
 @media (max-width: 959px) {
+  .app { overflow-x: clip; } /* 100vw conta a barra de rolagem em janelas estreitas no computador */
   .app.com-nav > .conteudo {
     display: flex;
     flex-direction: column;
@@ -717,7 +719,7 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
     content: "";
     flex: none;
     height: 130px;
-    margin: auto -16px -40px;
+    margin: auto calc(50% - 50vw) -40px;
     background: url("/img/skyline.svg") center bottom / auto 130px repeat-x;
   }
   .periodo-noite .app.com-nav > .conteudo::after { background-image: url("/img/skyline-noite.svg"); }
@@ -1362,6 +1364,7 @@ a.cartao:active { background: var(--superficie-3); }
     transition: border-color 0.15s, transform 0.12s;
   }
   .acao-rapida .acao-nome { flex: 1; }
+  @media (max-width: 1279px) { .acao-rapida > .icone { display: none; } } /* iPad deitado: o nome cabe numa linha */
   .acao-rapida .tile { flex: none; }
   .acao-rapida:hover { border-color: var(--azul-marca); }
   .acao-rapida:hover .icone { color: var(--azul-marca); }
