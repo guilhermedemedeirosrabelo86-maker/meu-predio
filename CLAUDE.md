@@ -62,6 +62,9 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 
 ## Próximos passos (atualize sempre)
 
+0. **Validar antes de programar mais** (ver `docs/mercado.md`): piloto grátis em 2–3 prédios por 2–3 meses e
+   conversar com ~10 síndicos de prédio pequeno. Diferencial recomendado: "app do síndico morador de prédio pequeno"
+   + transparência automática (balancete em PDF, assembleia pelo app). Ainda não decidido pelo usuário.
 1. Configurar o Resend (e-mail de "esqueci minha senha") — o usuário precisa criar a conta e, para enviar a
    qualquer pessoa, um domínio próprio (ex.: registro.br) com os registros DNS do Resend. Explicado em 2026-10-26.
 2. Esconder "Abrir no celular" do Perfil na versão hospedada (só faz sentido na rede local).
@@ -156,6 +159,7 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Análise de mercado e diferencial salva em `docs/mercado.md`. Commitado.
 - 2026-10-26 — App se atualiza sozinho: o PWA no iPhone não recarrega ao voltar para ele (o morador não via os
   prédios novos); agora, ao voltar, procura versão nova e recarrega na próxima troca de tela. Commitado.
 - 2026-10-26 — Ajustes no iPad: foto do Início e prédios do rodapé de ponta a ponta no iPad em pé; ações rápidas
