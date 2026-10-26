@@ -1,10 +1,12 @@
 """Condomínios, convites, unidades, moradores e veículos."""
 import re
+import secrets
 import sqlite3
 
-from . import auth, historico, limites
+from . import auth, db, historico, limites
 from .comum import exigir_login, exigir_membro, inteiro, ordem_natural, texto, unidade_do_condominio
-from .web import ErroHTTP, rota
+from .rotas_ocorrencias import _tipo_imagem
+from .web import Arquivo, ErroHTTP, rota
 
 MAX_UNIDADES = 500
 MAX_VEICULOS_POR_UNIDADE = 10
@@ -110,6 +112,8 @@ def ver_condominio(req, cid):
         "endereco": condominio["endereco"],
         "plano": condominio["plano"],
         "papel": membro["papel"],
+        "foto": condominio["foto"],
+        "foto_noite": condominio["foto_noite"],
     }
     if membro["papel"] == "sindico":
         dados["codigo_convite"] = condominio["codigo_convite"]
@@ -131,6 +135,63 @@ def renovar_convite(req, cid):
     codigo = _gerar_codigo(req.conn)
     req.conn.execute("UPDATE condominios SET codigo_convite = ? WHERE id = ?", (codigo, cid))
     return {"codigo_convite": codigo}
+
+
+# --- Foto do prédio ---------------------------------------------------------
+# Aparece no topo do Início no lugar das fotos padrão. "dia" vale o dia todo; "noite" (opcional) substitui à noite.
+# O nome do arquivo muda a cada envio, então o celular pode guardar a foto sem risco de mostrar a antiga.
+
+COLUNA_FOTO = {"dia": "foto", "noite": "foto_noite"}
+
+
+def _coluna_foto(periodo):
+    if periodo not in COLUNA_FOTO:
+        raise ErroHTTP(404, "Rota não encontrada.")
+    return COLUNA_FOTO[periodo]
+
+
+@rota("POST", "/api/condominios/{cid:int}/foto/{periodo}")
+def enviar_foto_predio(req, cid, periodo):
+    exigir_membro(req, cid, sindico=True)
+    coluna = _coluna_foto(periodo)
+    if not req.bruto:
+        raise ErroHTTP(400, "Envie a foto do prédio.")
+    _, extensao = _tipo_imagem(req.bruto)
+    anterior = req.conn.execute(f"SELECT {coluna} FROM condominios WHERE id = ?", (cid,)).fetchone()[0]
+    nome = secrets.token_hex(16) + extensao
+    db.salvar_arquivo(req.conn, f"predios/{nome}", req.bruto)
+    req.conn.execute(f"UPDATE condominios SET {coluna} = ? WHERE id = ?", (nome, cid))
+    if anterior:
+        db.apagar_arquivo(req.conn, f"predios/{anterior}")
+    acao = "Trocou" if anterior else "Enviou"
+    historico.anotar(req, cid, f"{acao} a foto do prédio" + ("" if periodo == "dia" else " à noite"))
+    return 201, {"foto": nome}
+
+
+@rota("DELETE", "/api/condominios/{cid:int}/foto/{periodo}")
+def remover_foto_predio(req, cid, periodo):
+    exigir_membro(req, cid, sindico=True)
+    coluna = _coluna_foto(periodo)
+    anterior = req.conn.execute(f"SELECT {coluna} FROM condominios WHERE id = ?", (cid,)).fetchone()[0]
+    if anterior:
+        req.conn.execute(f"UPDATE condominios SET {coluna} = NULL WHERE id = ?", (cid,))
+        db.apagar_arquivo(req.conn, f"predios/{anterior}")
+        historico.anotar(req, cid, "Removeu a foto do prédio" + ("" if periodo == "dia" else " à noite"))
+    return {"ok": True}
+
+
+@rota("GET", "/api/condominios/{cid:int}/fotos/{nome}")
+def ver_foto_predio(req, cid, nome):
+    """Só a foto atual do próprio condomínio (o nome precisa ser o que está no cadastro)."""
+    exigir_membro(req, cid)
+    condominio = req.conn.execute("SELECT foto, foto_noite FROM condominios WHERE id = ?", (cid,)).fetchone()
+    if nome not in (condominio["foto"], condominio["foto_noite"]):
+        raise ErroHTTP(404, "Foto não encontrada.")
+    conteudo = db.ler_arquivo(req.conn, f"predios/{nome}")
+    if conteudo is None:
+        raise ErroHTTP(404, "Foto não encontrada.")
+    tipo, _ = _tipo_imagem(conteudo)
+    return Arquivo(conteudo, tipo)
 
 
 # --- Convites ---------------------------------------------------------------

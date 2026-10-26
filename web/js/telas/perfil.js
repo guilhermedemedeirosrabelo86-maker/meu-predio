@@ -1,9 +1,11 @@
-import { del, get, patch, post } from '../api.js';
+import {
+  del, enviarArquivo, get, patch, post,
+} from '../api.js';
 import { carregarUsuario, estado, limparSessao, navegar, recarregar } from '../estado.js';
 import { pararVerificacao, pedirPermissao, suportaNotificacoes } from '../notificacoes.js';
 import {
   aoEnviar, avatar, cabecalho, campo, campoSenha, comErro, confirmar, erroForm, h, icone, item, linkTelefone, mascaraTelefone, NOMES_PAPEL,
-  pill, secao, tile, toast,
+  pill, reduzirFoto, secao, tile, toast,
 } from '../ui.js';
 
 export async function sairDaConta() {
@@ -36,6 +38,7 @@ export async function telaPerfil() {
     membro && secao('Notificações', cartaoNotificacoes()),
     estado.pedidoInstalacao && cartaoInstalar(),
     sindico && secao('Condomínio', formCondominio(condominio)),
+    sindico && secao('Foto do prédio', cartaoFotoPredio(condominio)),
     secao('Conta', cartaoConta()),
     secao('Privacidade', cartaoPrivacidade()));
 }
@@ -149,6 +152,42 @@ function formCondominio(condominio) {
     recarregar();
   });
   return form;
+}
+
+/** O síndico envia a foto do prédio, que aparece no topo do Início para todos (no lugar das fotos padrão). */
+function cartaoFotoPredio(condominio) {
+  const linha = (periodo, titulo, sub) => {
+    const nome = condominio[periodo === 'dia' ? 'foto' : 'foto_noite'];
+    const url = `/api/condominios/${condominio.id}/foto/${periodo}`;
+    const seletor = h('input', { type: 'file', accept: 'image/*' });
+    seletor.addEventListener('change', comErro(async () => {
+      const arquivo = seletor.files[0];
+      if (!arquivo) return;
+      toast('Enviando a foto…');
+      await enviarArquivo(url, await reduzirFoto(arquivo, 1600, 0.82));
+      await carregarUsuario();
+      toast('Foto do prédio atualizada.');
+      recarregar();
+    }));
+    const remover = comErro(async () => {
+      if (!await confirmar('O topo do Início volta a mostrar a foto padrão.', { titulo: 'Remover a foto?', botao: 'Remover', perigo: true })) return;
+      await del(url);
+      await carregarUsuario();
+      recarregar();
+    });
+    return h('div', { class: 'foto-predio' },
+      nome
+        ? h('img', { class: 'miniatura', src: `/api/condominios/${condominio.id}/fotos/${nome}`, alt: titulo })
+        : h('span', { class: 'miniatura vazia' }, icone('predio')),
+      h('div', { class: 'item-texto' }, h('span', { class: 'item-titulo' }, titulo), h('span', { class: 'item-sub' }, sub)),
+      h('div', { class: 'acoes' },
+        h('label', { class: 'botao tonal pequeno' }, seletor, nome ? 'Trocar' : 'Enviar'),
+        nome && h('button', { class: 'botao fantasma pequeno perigo', type: 'button', 'aria-label': `Remover ${titulo.toLowerCase()}`, onclick: remover }, icone('lixo'))));
+  };
+  return h('div', { class: 'cartao' },
+    h('p', { class: 'dica' }, 'Aparece no topo do Início para todos os moradores. Uma foto da fachada, na horizontal, fica melhor.'),
+    linha('dia', 'Foto do prédio', 'Aparece o dia todo'),
+    linha('noite', 'À noite (opcional)', 'Se enviar, aparece das 18h às 5h'));
 }
 
 function cartaoConta() {

@@ -59,6 +59,8 @@ def _apagar_condominio(conn, cid):
         (cid,))]
     nomes += [f"contas/{l[0]}" for l in conn.execute(
         "SELECT comprovante FROM lancamentos WHERE condominio_id = ? AND comprovante IS NOT NULL", (cid,))]
+    fotos = conn.execute("SELECT foto, foto_noite FROM condominios WHERE id = ?", (cid,)).fetchone()
+    nomes += [f"predios/{n}" for n in fotos if n]
     conn.executemany("DELETE FROM arquivos WHERE nome = ?", [(n,) for n in nomes])
     conn.execute("DELETE FROM condominios WHERE id = ?", (cid,))
 

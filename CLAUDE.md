@@ -57,11 +57,10 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 ## Próximos passos (atualize sempre)
 
 1. Configurar o Resend (e-mail de "esqueci minha senha") — o usuário precisa criar a conta.
-2. Síndico enviar a foto do próprio prédio para o topo do Início (ideia aprovada para "depois").
-3. Esconder "Abrir no celular" do Perfil na versão hospedada (só faz sentido na rede local).
-4. Antes de cobrar: migrar o banco para Postgres (Neon ou Supabase, região São Paulo) e as fotos para
+2. Esconder "Abrir no celular" do Perfil na versão hospedada (só faz sentido na rede local).
+3. Antes de cobrar: migrar o banco para Postgres (Neon ou Supabase, região São Paulo) e as fotos para
    um armazenamento de arquivos (Vercel Blob ou Supabase Storage).
-5. Do README: fechamento do mês + balancete em PDF, Web Push, alertas automáticos, planos (limites do plano grátis).
+4. Do README: fechamento do mês + balancete em PDF, Web Push, alertas automáticos, planos (limites do plano grátis).
 
 ## Decisões
 
@@ -80,6 +79,11 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   entardecer escurecida e um prédio antigo de tijolo.
   Classe `periodo-*` no `<html>` (`aplicarPeriodo` em ui.js, conferida a cada minuto); a saudação segue os
   mesmos horários. Manhã e tarde: Aalo Lens (Unsplash). Noite: foto 31737860 do Pexels (licença Pexels).
+- **Foto do prédio (opção "A", escolhida pelo usuário):** o síndico envia no Perfil a foto do prédio, que vale
+  o dia todo no topo do Início, e opcionalmente uma "à noite" (18h–5h). Sem foto, ficam as fotos padrão por
+  horário. Colunas `foto`/`foto_noite` em `condominios`; arquivo em `arquivos` com nome `predios/<aleatório>`,
+  novo a cada envio (o celular pode guardar sem mostrar foto velha). Aplicada em `atualizarFotoDoTopo` (app.js).
+  Serve para vender: o app "vira" do prédio do cliente na demonstração.
 - **Histórico do síndico:** só o síndico vê; ninguém apaga pelo app.
 - **Contadores e selos:** ninguém é avisado do que ele mesmo fez (encomenda que registrou, enquete ou
   ocorrência que criou, reserva que pediu). Vale para o menu (`/contadores`) e para o Início (`/painel`).
@@ -111,6 +115,8 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Síndico envia a foto do prédio (dia e, opcional, noite) no Perfil; aparece no topo do Início
+  para todos. Commitado.
 - 2026-10-26 — Foto da noite trocada por uma residência moderna (a anterior, prédio de tijolo, foi achada feia).
   Commitado.
 - 2026-10-26 — Foto do topo muda com a hora (manhã, tarde, noite de verdade) no Início e no login; saudação nos
@@ -118,7 +124,7 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
 - 2026-10-26 — Zoom do iPhone corrigido (letra 16px nos campos, sem zoom no toque duplo); contadores em tempo
   real nas abas e no menu lateral (consulta a cada 10 s; ninguém é avisado do que ele mesmo fez); número
   centralizado na bolinha; telas entram com animação curta; rolagem mais leve; fontes pré-carregadas.
-- 2026-10-26 — Criado este CLAUDE.md como registro oficial, a pedido do usuário. Pendente: commit dele.
+- 2026-10-26 — Criado este CLAUDE.md como registro oficial, a pedido do usuário. Commitado (f74ee6b).
 - 2026-10-26 — Visual "Claro" com foto do condomínio no topo, Poppins, barra flutuante, ícone azul
   (commit 909f85e). Publicado na Vercel.
 - 2026-10-26 — Migração para Vercel + Turso, limite de tentativas, senhas mais fortes, esqueci minha

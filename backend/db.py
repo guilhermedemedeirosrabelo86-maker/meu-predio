@@ -44,6 +44,8 @@ CREATE TABLE IF NOT EXISTS condominios (
     plano           TEXT NOT NULL DEFAULT 'gratis',
     taxa_centavos   INTEGER NOT NULL DEFAULT 0,   -- valor da taxa mensal; 0 = ainda não definido
     taxa_vencimento INTEGER NOT NULL DEFAULT 10,  -- dia do mês
+    foto            TEXT,  -- foto do prédio (nome em arquivos, pasta "predios/"); vale o dia todo
+    foto_noite      TEXT,  -- foto opcional para a noite
     criado_em       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -357,6 +359,10 @@ def _migrar(conn):
     if "taxa_centavos" not in colunas:
         conn.execute("ALTER TABLE condominios ADD COLUMN taxa_centavos INTEGER NOT NULL DEFAULT 0")
         conn.execute("ALTER TABLE condominios ADD COLUMN taxa_vencimento INTEGER NOT NULL DEFAULT 10")
+
+    if "foto" not in colunas:
+        conn.execute("ALTER TABLE condominios ADD COLUMN foto TEXT")
+        conn.execute("ALTER TABLE condominios ADD COLUMN foto_noite TEXT")
 
     colunas = {linha["name"] for linha in conn.execute("PRAGMA table_info(usuarios)")}
     if "termos_aceitos_em" not in colunas:

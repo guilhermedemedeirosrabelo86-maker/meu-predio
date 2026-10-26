@@ -29,7 +29,7 @@ import { telaAreas, telaEditarArea, telaReservas } from './telas/reservas.js';
 import { telaUnidade } from './telas/unidade.js';
 import { telaNovaVisita, telaVisita, telaVisitas } from './telas/visitas.js';
 import {
-  aplicarPeriodo, avatar, esqueleto, fecharAbertura, h, icone, NOMES_PAPEL, vibrar,
+  aplicarPeriodo, avatar, esqueleto, fecharAbertura, h, icone, NOMES_PAPEL, periodo, vibrar,
 } from './ui.js';
 
 // publico: só para quem não está logado | aberta: qualquer um, sem moldura do app
@@ -111,10 +111,29 @@ const NAVEGACAO = {
 
 const raiz = document.getElementById('app');
 
-// Foto do topo conforme a hora: aplica já (antes da primeira tela) e confere a cada minuto e ao voltar ao app.
-aplicarPeriodo();
-setInterval(aplicarPeriodo, 60_000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) aplicarPeriodo(); });
+/**
+ * Foto do topo. Se o síndico enviou a foto do prédio, ela vale o dia todo (e a "da noite", se houver, à noite);
+ * senão ficam as fotos padrão de manhã, tarde e noite (classe periodo-* no <html>, ver app.css).
+ * A variável vai no estilo do <html> pelo JavaScript, o que a política de segurança (CSP) permite.
+ */
+function atualizarFotoDoTopo() {
+  aplicarPeriodo();
+  const m = estado.membro;
+  const nome = m && ((periodo() === 'noite' && m.foto_noite) || m.foto);
+  const estilo = document.documentElement.style;
+  if (nome) {
+    estilo.setProperty('--foto-condominio', `url("/api/condominios/${m.condominio_id}/fotos/${nome}")`);
+    estilo.setProperty('--veu-periodo', 'linear-gradient(transparent, transparent)');
+  } else {
+    estilo.removeProperty('--foto-condominio');
+    estilo.removeProperty('--veu-periodo');
+  }
+}
+
+// Aplica já (antes da primeira tela) e confere a cada minuto e ao voltar ao app.
+atualizarFotoDoTopo();
+setInterval(atualizarFotoDoTopo, 60_000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarFotoDoTopo(); });
 let sessaoVerificada = false;
 let geracao = 0;
 
@@ -140,6 +159,7 @@ function selecionarCondominio() {
   const ativos = estado.condominios.filter((c) => c.status === 'ativo');
   const salvo = Number(lerLocal('condominioAtual'));
   estado.membro = ativos.find((c) => c.condominio_id === salvo) || ativos[0] || null;
+  atualizarFotoDoTopo();
   if (estado.membro) {
     escolherCondominio(estado.membro.condominio_id);
     iniciarVerificacao(estado.membro.condominio_id);

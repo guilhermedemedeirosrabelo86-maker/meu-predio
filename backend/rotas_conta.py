@@ -85,7 +85,7 @@ def ver_eu(req):
     condominios = req.conn.execute(
         """
         SELECT m.id AS membro_id, m.papel, m.status,
-               c.id AS condominio_id, c.nome AS condominio,
+               c.id AS condominio_id, c.nome AS condominio, c.foto, c.foto_noite,
                u.id AS unidade_id, u.identificador AS unidade
         FROM membros m
         JOIN condominios c ON c.id = m.condominio_id
