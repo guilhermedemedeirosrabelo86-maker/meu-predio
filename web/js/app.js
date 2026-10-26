@@ -311,10 +311,12 @@ function montarNaMoldura(conteudo, rota) {
   });
   posicionarIndicador();
   moldura.el.querySelector('.seletor-condominio')?.classList.toggle('aberto', rota.padrao === 'condominios');
+  // No Início, a barra do topo fica transparente sobre a foto do condomínio (até rolar a tela).
+  moldura.el.classList.toggle('tela-inicio', rota.padrao === 'inicio');
   moldura.main.replaceChildren(conteudo);
 }
 
-/** Celular: o traço amarelo da barra de baixo desliza até a aba aberta. */
+/** Celular: a pílula azul-clara da barra de baixo desliza até a aba aberta. */
 function posicionarIndicador() {
   const indicador = moldura?.nav?.querySelector('.nav-indicador');
   if (!indicador) return;
@@ -325,7 +327,7 @@ function posicionarIndicador() {
   }
   const base = moldura.nav.getBoundingClientRect();
   const alvo = ativo.getBoundingClientRect();
-  // Um traço amarelo no alto da barra, da largura do ícone da aba aberta.
+  // Uma pílula atrás do ícone da aba aberta, da largura dele.
   Object.assign(indicador.style, {
     width: `${alvo.width}px`,
     transform: `translateX(${alvo.left - base.left}px)`,

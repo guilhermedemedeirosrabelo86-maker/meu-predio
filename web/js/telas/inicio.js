@@ -2,15 +2,15 @@ import { get } from '../api.js';
 import { estado } from '../estado.js';
 import { atualizarContador } from '../notificacoes.js';
 import {
-  dinheiro, formatarDia, h, item, maiuscula, pill, placa, primeiroNome, quando, saudacao, secao, tile,
+  dinheiro, formatarDia, h, item, maiuscula, pill, primeiroNome, quando, saudacao, secao, tile,
 } from '../ui.js';
 
 const plural = (n, um, varios) => (n === 1 ? `1 ${um}` : `${n} ${varios}`);
 
-/** Painel inicial: a placa da unidade, o que pede atenção, o caixa e todos os módulos. */
+/** Painel inicial: foto do condomínio com a saudação, os atalhos, o que pede atenção e o caixa. */
 export async function telaInicio() {
   const membro = estado.membro;
-  const sindico = membro.papel === 'sindico';
+  const sindico = membro.papel === 'sindico' || membro.papel === 'subsindico';
   const painel = await get(`/api/condominios/${membro.condominio_id}/painel`);
   atualizarContador(painel.avisos_nao_lidos);
 
@@ -49,21 +49,21 @@ export async function telaInicio() {
 
   const data = maiuscula(new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }));
   return h('div', { class: 'pagina' },
-    h('header', { class: 'hero' },
-      placa(membro.unidade),
-      h('div', { class: 'hero-textos' },
-        h('h1', {}, `${saudacao()}, ${primeiroNome(estado.usuario.nome)}`),
-        h('p', { class: 'data' }, data))),
+    // Foto do condomínio no topo, com a saudação; os atalhos sobem um pouco sobre ela.
+    h('header', { class: 'hero-foto' },
+      h('p', { class: 'data' }, data),
+      h('h1', {}, `${saudacao()}, ${primeiroNome(estado.usuario.nome)}`),
+      membro.unidade && h('span', { class: 'unidade' }, `Unidade ${membro.unidade}`)),
+
+    h('nav', { class: 'atalhos', 'aria-label': 'Atalhos do condomínio' },
+      modulos.map(([rota, nomeIcone, rotulo, selo]) => h('a', { class: 'atalho', href: `#/${rota}` },
+        tile(nomeIcone),
+        h('span', { class: 'atalho-nome' }, rotulo),
+        selo ? h('span', { class: 'selo', 'aria-label': 'Pede atenção' }, typeof selo === 'number' && selo > 9 ? '9+' : selo) : null))),
 
     h('div', { class: 'grade sem-sobras' },
       paraVoce(painel, sindico),
       painel.caixa && caixa(painel.caixa)),
-
-    secao('Módulos', h('nav', { class: 'atalhos', 'aria-label': 'Módulos do condomínio' },
-      modulos.map(([rota, nomeIcone, rotulo, selo]) => h('a', { class: 'atalho', href: `#/${rota}` },
-        tile(nomeIcone),
-        h('span', { class: 'atalho-nome' }, rotulo),
-        selo ? h('span', { class: 'selo', 'aria-label': 'Pede atenção' }, typeof selo === 'number' && selo > 9 ? '9+' : selo) : null)))),
 
     (painel.ultimo_aviso || painel.proxima_reserva) && secao('Recentes', h('div', { class: 'cartao lista' },
       painel.ultimo_aviso && item({
