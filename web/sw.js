@@ -1,6 +1,6 @@
 // Service worker: deixa o app abrir sem internet (mostrando a última versão)
 // e abre o mural quando o morador toca numa notificação.
-const CACHE = 'meu-predio-v27';
+const CACHE = 'meu-predio-v28';
 const ARQUIVOS = [
   '/', '/index.html', '/manifest.webmanifest', '/icone.svg', '/icone-192.png', '/icone-512.png',
   '/css/app.css', '/fonts/poppins-400.woff2', '/fonts/poppins-500.woff2', '/fonts/poppins-600.woff2', '/fonts/poppins-700.woff2', '/img/condominio-manha.jpg', '/img/condominio-tarde.jpg', '/img/condominio-noite.jpg', '/img/skyline.svg', '/img/skyline-noite.svg',

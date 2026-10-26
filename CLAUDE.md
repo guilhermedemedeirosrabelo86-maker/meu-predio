@@ -106,7 +106,9 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   `web/img/skyline.svg` (dia) e `skyline-noite.svg` (prédios mais escuros, janelas amarelas acesas), em azul bem
   claro, fixos no pé da tela (`.app.com-nav::after`, só ≥960px). Duas camadas de prédios, caixas d'água, antenas e
   árvores. Os SVGs foram gerados por um script Python (prédios aleatórios com semente fixa); para mudar, edite o SVG
-  ou gere de novo. Celular sem mudança.
+  ou gere de novo. **No celular** (pedido depois): os mesmos prédios no fim da tela, logo acima da barra de baixo
+  (`.conteudo::after`); em telas curtas o conteúdo ocupa a altura toda e os prédios descem até o pé; nas compridas
+  aparecem ao rolar até o fim. O usuário preferiu isso a deixá-los fixos atrás da barra (que cobria quase tudo).
 - **Login no computador (2026-10-26):** foto na metade esquerda, de cima a baixo; login à direita, com a marca em
   texto escuro. No celular, igual (foto no alto). Vale para entrar/cadastro, passe do visitante e "Abrir no celular".
 - **Histórico do síndico:** só o síndico vê; ninguém apaga pelo app.
@@ -141,11 +143,14 @@ Perfis: síndico, morador e portaria. Detalhes de cada módulo no README.
   para buscar de novo e redesenhar se mudou, use `revalidar(caminho)`.
 - **Token do Turso colado duas vezes:** o campo de senha não mostra o que se cola; o usuário colou o token em
   dobro (5 partes em vez de 3) e o Turso respondeu "JWT error: Base64 error". `limpar_token` em backup.py corrige.
+- **Altura no celular:** a barra do topo tem 60px (não 58, o `min-height`); a conta da altura mínima do conteúdo
+  (prédios no pé da tela) usa 60px. Errar isso faz a tela curta rolar uns pixels à toa.
 - **Testes:** `tests/base.py` baixa `auth.ITERACOES` para os testes ficarem rápidos; o cadastro exige
   `"aceito_termos": true`.
 
 ## Diário (mais novo primeiro; só acrescente)
 
+- 2026-10-26 — Prédios do fundo também no celular, no fim da tela acima da barra de baixo. Commitado.
 - 2026-10-26 — Fundo do computador: fileira de prédios em azul claro no rodapé (versão noite com janelas acesas);
   nome do condomínio alinhado nas telas estreitas. Commitado.
 - 2026-10-26 — Foto da noite trocada: era uma casa, agora são torres modernas ao anoitecer (Aalo Lens, mesmo
